@@ -21,3 +21,7 @@ Similarly, debug commands may be passed as command-line arguments to `synacor.py
 For example, to load the `dumps/init` state to skip the self-test and decryption, run:
 
     ./synacor.py dbg_load dumps/init
+
+Dump files are stored in Python [pickle](https://docs.python.org/3/library/pickle.html) format, so if you want to inspect the memory in a hex editor, for example, it will be necessary to extract a raw memory dump:
+
+    ./tools/dump_to_raw.py dumps/init dumps/init.raw
