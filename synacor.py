@@ -68,6 +68,52 @@ while True:
 	
 	if instruction == 21: #NOP
 		pass
+	elif instruction == 1: #SET
+		swallowOp().set(swallowOp().get())
+	elif instruction == 2: #PUSH
+		SYN_STK.append(swallowOp().get())
+	elif instruction == 3: #POP
+		if len(SYN_STK) == 0:
+			raise Exception('Attempted to pop from empty stack at {}'.format(SYN_PTR))
+		swallowOp().set(SYN_STK.pop())
+	elif instruction == 4: #EQ
+		swallowOp().set(1 if swallowOp().get() == swallowOp().get() else 0)
+	elif instruction == 5: #GT
+		swallowOp().set(1 if swallowOp().get() > swallowOp().get() else 0)
+	elif instruction == 6: #JMP
+		SYN_PTR = swallowOp().get()
+	elif instruction == 7: #JT (jump if not zero)
+		a, b = swallowOp().get(), swallowOp().get()
+		if a != 0:
+			SYN_PTR = b
+	elif instruction == 8: #JF (jump if zero)
+		a, b = swallowOp().get(), swallowOp().get()
+		if a == 0:
+			SYN_PTR = b
+	elif instruction == 9: #ADD
+		swallowOp().set((swallowOp().get() + swallowOp().get()) % 32768)
+	elif instruction == 10: #MULT
+		swallowOp().set((swallowOp().get() * swallowOp().get()) % 32768)
+	elif instruction == 11: #MOD
+		swallowOp().set(swallowOp().get() % swallowOp().get())
+	elif instruction == 12: #AND
+		swallowOp().set(swallowOp().get() & swallowOp().get())
+	elif instruction == 13: #OR
+		swallowOp().set(swallowOp().get() | swallowOp().get())
+	elif instruction == 14: #NOT
+		swallowOp().set(~swallowOp().get() % 32768) # mathemagic
+	elif instruction == 15: #RMEM
+		swallowOp().set(SYN_MEM[swallowOp().get()])
+	elif instruction == 16: #WMEM
+		a, b = swallowOp().get(), swallowOp().get()
+		SYN_MEM[a] = b # order of operations
+	elif instruction == 17: #CALL
+		SYN_STK.append(SYN_PTR + 1) # skip one word for the operand
+		SYN_PTR = swallowOp().get()
+	elif instruction == 18: #RET
+		if len(SYN_STK) == 0:
+			raise Exception('Attempted to return with empty stack at {}'.format(SYN_PTR))
+		SYN_PTR = SYN_STK.pop()
 	elif instruction == 19: #OUT
 		print(chr(swallowOp().get()), end='')
 	else:
