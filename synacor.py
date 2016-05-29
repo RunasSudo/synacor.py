@@ -22,6 +22,7 @@ SYN_PTR = 0
 SYN_MEM = [0] * 32768
 SYN_REG = [0] * 8
 SYN_STK = []
+SYN_STDIN_BUF = []
 
 class OpLiteral:
 	def __init__(self, value):
@@ -52,16 +53,20 @@ def swallowOp():
 	SYN_PTR += 1
 	return op
 
-# Read code into memory
-with open('challenge.bin', 'rb') as data:
-	while True:
-		byteData = data.read(2)
-		if len(byteData) < 2:
-			break
-		SYN_MEM[SYN_PTR] = struct.unpack('<H', byteData)[0]
-		SYN_PTR += 1
-
-SYN_PTR = 0
+if len(sys.argv) > 1:
+	dbg_args = sys.argv[1:]
+	with open(dbg_args[0] + '.py', 'r') as f:
+		exec(f.read(), globals(), locals())
+else:
+	# Read code into memory
+	with open('challenge.bin', 'rb') as data:
+		while True:
+			byteData = data.read(2)
+			if len(byteData) < 2:
+				break
+			SYN_MEM[SYN_PTR] = struct.unpack('<H', byteData)[0]
+			SYN_PTR += 1
+	SYN_PTR = 0
 
 # Begin execution
 while True:
@@ -120,6 +125,15 @@ while True:
 	elif instruction == 19: #OUT
 		print(chr(swallowOp().get()), end='')
 	elif instruction == 20: #IN
-		swallowOp().set(ord(sys.stdin.read(1))) # the spec says a whole line will be read, so ¯\_(ツ)_/¯
+		while len(SYN_STDIN_BUF) == 0:
+			line = sys.stdin.readline()
+			if line.startswith('.'): # debug command
+				dbg_args = line.rstrip()[1:].split()
+				with open(dbg_args[0] + '.py', 'r') as f:
+					SYN_PTR -= 1; exec(f.read(), globals(), locals()); SYN_PTR += 1
+			else:
+				SYN_STDIN_BUF = list(line)
+		
+		swallowOp().set(ord(SYN_STDIN_BUF.pop(0)))
 	else:
 		raise Exception('Unimplemented opcode {} at {}'.format(instruction, SYN_PTR))
