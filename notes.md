@@ -40,3 +40,16 @@ At the foothills, the first area of the RPG:
     You find yourself writing "............" on the tablet.  Perhaps it's some kind of code?
 
 Required opcodes: All except `halt`
+
+## Code 5 (Twisty passages)
+After falling down the bridge, there is an empty lantern to the `east`. To the west, there is a passage, where one can take the `ladder` down or venture into the `darkness`. Attempting to venture into the `darkness` at this point will result in being eaten by Grues.
+
+Taking the `ladder` down, then traversing `west`, `south`, `north`, a code is obtained:
+
+    Chiseled on the wall of one of the passageways, you see:
+    
+        ............
+    
+    You take note of this and keep walking.
+
+There is also a can, which can be `take`n and `use`d to fill the lantern, which can then be `use`d to become lit, and which will keep away Grues.
