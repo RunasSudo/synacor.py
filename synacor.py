@@ -15,7 +15,8 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import struct
+import struct # for bytes<-->word handling
+import sys # for stdin
 
 SYN_PTR = 0
 SYN_MEM = [0] * 32768
@@ -68,6 +69,8 @@ while True:
 	
 	if instruction == 21: #NOP
 		pass
+	elif instruction == 0: #HALT
+		sys.exit(0)
 	elif instruction == 1: #SET
 		swallowOp().set(swallowOp().get())
 	elif instruction == 2: #PUSH
@@ -116,5 +119,7 @@ while True:
 		SYN_PTR = SYN_STK.pop()
 	elif instruction == 19: #OUT
 		print(chr(swallowOp().get()), end='')
+	elif instruction == 20: #IN
+		swallowOp().set(ord(sys.stdin.read(1))) # the spec says a whole line will be read, so ¯\_(ツ)_/¯
 	else:
 		raise Exception('Unimplemented opcode {} at {}'.format(instruction, SYN_PTR))
