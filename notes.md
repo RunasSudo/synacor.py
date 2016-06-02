@@ -1,4 +1,5 @@
 # Spoilers!
+These solution notes are **very** detailed! Reading them before tackling the challenge yourself will dispossess you of the masochistic joy of working through the best worst use of your spare time mankind has ever devised! Read on at your peril!
 
 Note: Codes seem to be unique for every user.
 
@@ -66,7 +67,7 @@ Returning to the fork at the passage and venturing to the `darkness`, we now `co
 #### Mathematical!
 In other words, we seek a solution to the equation *a* + *bc*<sup>2</sup> + *d*<sup>3</sup> - e = 399, where {*a*, *b*, *c*, *d*, *e*} = {2, 3, 5, 7, 9}.
 
-Synacor being, of course, a programming-orientated exercise, the usual response to this problem is to code up a quick program to loop through all 5! = 120 permutations of the coins to find which one satisfies the equation. Being a mathematician, however – could you tell from the italics? – I will solve this the [*proper* way](https://xkcd.com/435/): with a scientific calculator and some thinking (\*insert insufferably smug expression here\*).
+The Synacor challenge being, of course, a programming-orientated exercise, the usual response to this problem is to code up a quick program to loop through all 5! = 120 permutations of the coins to find which one satisfies the equation. Being a mathematician, however – could you tell from the italics? – I will solve this the [*proper* way](https://xkcd.com/435/): with a scientific calculator and some thinking (\*insert insufferably smug expression here\*).
 
 Firstly, note that -7 ≤ *a* − *e* ≤ 7, so 392 ≤ *bc*<sup>2</sup> + *d*<sup>3</sup> ≤ 406. Furthermore, since *bc*<sup>2</sup> is always positive, *d*<sup>3</sup> ≤ 406. We can thus rule out *d* = 9, so *d* ≤ 7, *d*<sup>3</sup> ≤ 343 and *bc*<sup>2</sup> ≤ 63, also ruling out *c* = 7 and *c* = 9. Furthermore, since 392 ≤ *bc*<sup>2</sup> + *d*<sup>3</sup>, *d*<sup>3</sup> ≥ 329. Since we already knew *d* ≤ 7, *d* = 7.
 
@@ -146,11 +147,11 @@ So far so good, but what's this??
               209c # -> string "You are in a twisty maze ...
               ...
 
-Aah, so it looks like each room is stored as a block of 5 words, each a pointer to a length of words: a string (the title), a string (the text), a list of pointers to strings (the exit names), a list of pointers to more rooms (the exits), and a memory location to `call` (or `0000`).
+Aah, so it looks like each room is stored as a block of 5 words, the first four pointers to lengths of words: a string (the title), a string (the text), a list of pointers to strings (the exit names) and a list of pointers to more rooms (the exits), followed by a memory location to `call` (or `0000`).
 
 Further analysis suggests that this particular call relates to the step counter for the Grues in the maze.
 
-We probably could have reached these same conclusions by analysing the suspicious-looking block of code following the room definitions, but assembly makes my head spin so ¯\\_(ツ)_/¯
+We probably could have reached these same conclusions by analysing the suspicious-looking block of code following the room definitions, but assembly makes my head spin so ¯\\\_(ツ)\_/¯
 
 Now what about items? Looking at a familiar item, the tablet:
 
@@ -173,7 +174,7 @@ Examining the data for the teleporter:
 Now, let's see what this `1545` does. C-style, because assembly makes my brain spin.
 
 ```c
-1545() {
+int 1545() {
 	if (R8 == 0)
 		return 15e5(); // Ground state teleport
 	05b2(70ac, 05fb, 1807 + 585a); // Secure text print
@@ -196,14 +197,14 @@ Now, let's see what this `1545` does. C-style, because assembly makes my brain s
 	return 1652();
 }
 
-178b(R1, R2) {
+int 178b(R1, R2) {
 	if (R1 != 0) {
 		return 1793(R1, R2);
 	}
 	return R2 + 0001;
 }
 
-1793(R1, R2) {
+int 1793(R1, R2) {
 	if (R2 != 0) {
 		return 17a0(R1, R2);
 	}
@@ -213,7 +214,7 @@ Now, let's see what this `1545` does. C-style, because assembly makes my brain s
 	return R1;
 }
 
-17a0(R1, R2) {
+int 17a0(R1, R2) {
 	R2 = R2 + 7fff;
 	R2 = 178b(R1, R2);
 	R1 = R1 + 7fff;
@@ -237,12 +238,14 @@ No mathematical wizardry here, just implementing this and run a brute-force on a
 Running the algorithm, the correct value is revealed to be `0x6486`. Now we simply set `R8` to `0x6486` and patch the code to skip the check, before `use`ing the `teleporter`:
 
     1571 call 178b       -> nop nop
-    1573 eq   R2 R1 0006 -> nop nop nop
+    1573 eq   R2 R1 0006 -> nop nop nop nop
     1577 jf   R2 15cb    -> nop nop nop
+
+I've implemented this as a debug function to prepare the teleporter:
 
     > .dbg_teleporter
     Patched. Ready to run "use teleporter".
-    use teleporter
+    > use teleporter
     
     
     A strange, electronic voice is projected into your mind:
@@ -256,3 +259,34 @@ Running the algorithm, the correct value is revealed to be `0x6486`. Now we simp
     It begins to rain.  The message washes away.  You take a deep breath and feel firmly grounded in reality as the effects of the teleportation wear off.
 
 ### Code 8 (Beach and vault)
+Arriving at the beach, traverse `north`ward until you reach a fork. To the `east` lies a `journal` containing clues as to the upcoming puzzle.
+
+With the ability to map the puzzle (possibly with the help of our knowledge of the map data format), and (unlike the adventurers, it seems) a grasp of basic arithmetic, this puzzle shouldn't be too difficult to solve. I couldn't do better than [paiv](https://github.com/paiv)'s [solution](https://paiv.github.io/blog/2016/04/24/synacor-challenge.html) ([code](https://github.com/paiv/synacor-challenge/tree/master/code/src/vault), [map](https://github.com/paiv/synacor-challenge/blob/master/notes/vault-locks.svg)), and it doesn't look like there's much parallelisation to do, so I'll leave you with those links.
+
+The solution is:
+
+* start: **22**
+* `north`, `east`: 22 + 4 = 26
+* `east`, `north`: 26 − 11 = 15
+* `west`, `south`: 15 × 4 = 60
+* `east`, `east`: 42 − 18 = 42
+* `west`, `north`: 31 − 11 = 31
+* `north`, `east`: 30 − 1 = **30**
+
+Navigating through the maze:
+
+    As you approach the vault door, the number on the vault door flashes white!  The hourglass is still running!  It flashes white!  You hear a click from the vault door.  The orb evaporates out of hour hands.
+    
+    > vault
+    
+    == Vault ==
+    Things of interest here:
+    - mirror
+    
+    > use mirror
+    
+    You gaze into the mirror, and you see yourself gazing back.  But wait!  It looks like someone wrote on your face while you were unconscious on the beach!  Through the mirror, you see "............" scrawled in charcoal on your forehead.
+    
+    Congratulations; you have reached the end of the challenge!
+
+Given that you've made it this far (You didn't cheat, did you? I did warn you at the beginning!) this last challenge should be no problem.
