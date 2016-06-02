@@ -96,11 +96,15 @@ Proceed to the `north` door and `use` the `teleporter` to obtain the code:
     After a few moments, you find yourself back on solid ground and a little disoriented.
 
 ## The true-believers-only codes
-At this point, you will almost certainly need to delve into the code of the challenge, if you haven't already. The code in `challenge.bin` past the self-test is encrypted, so disassembling and analysing the code is most easily done based off a memory dump from a running copy.
+At this point, you will almost certainly need to delve into the code of the challenge, if you haven't already. The code in `challenge.bin` past the self-test is encrypted, so disassembling and analysing the code is most easily done based off a memory dump from a running copy:
 
-### The guts
+    .dbg_dump dumps/init (From inside the game)
+    ./tools/dump_to_raw.py dumps/init dumps/init.raw
+    ./tools/disasm.py dumps/init.raw > dumps/init.asm
+
 (Note to self: `pop` takes an operand, *duh*. No wonder everything looked funny…)
 
+### The guts
 Note that at `1808` there is the following data:
 
     1808 data 00b7
@@ -146,9 +150,9 @@ Aah, so it looks like each room is stored as a block of 5 words, each a pointer 
 
 Further analysis suggests that this particular call relates to the step counter for the Grues in the maze.
 
-We probably could have reached these same conclusions by analysing the suspicious-looking block of code following the room definitions, but assembly makes my head spin so ¯\_(ツ)_/¯
+We probably could have reached these same conclusions by analysing the suspicious-looking block of code following the room definitions, but assembly makes my head spin so ¯\\_(ツ)_/¯
 
-Now what about items? Looking at a more familiar item, the tablet:
+Now what about items? Looking at a familiar item, the tablet:
 
     0a6c data 468e 4695 090d 1270
     468e data 0006 "tablet"
@@ -230,6 +234,25 @@ No mathematical wizardry here, just implementing this and run a brute-force on a
 
     gcc ackermann.c -o ackermann -lpthread -O3 && ./ackermann
 
-Running the algorithm, the correct value is revealed to be `0x6486`.
+Running the algorithm, the correct value is revealed to be `0x6486`. Now we simply set `R8` to `0x6486` and patch the code to skip the check, before `use`ing the `teleporter`:
+
+    1571 call 178b       -> nop nop
+    1573 eq   R2 R1 0006 -> nop nop nop
+    1577 jf   R2 15cb    -> nop nop nop
+
+    > .dbg_teleporter
+    Patched. Ready to run "use teleporter".
+    use teleporter
+    
+    
+    A strange, electronic voice is projected into your mind:
+    
+      "Unusual setting detected!  Starting confirmation process!  Estimated time to completion: 1 billion years."
+    
+    You wake up on a sandy beach with a slight headache.  The last thing you remember is activating that teleporter... but now you can't find it anywhere in your pack.  Someone seems to have drawn a message in the sand here:
+    
+        ............
+    
+    It begins to rain.  The message washes away.  You take a deep breath and feel firmly grounded in reality as the effects of the teleportation wear off.
 
 ### Code 8 (Beach and vault)
