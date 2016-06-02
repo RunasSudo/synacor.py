@@ -16,7 +16,7 @@
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import struct # for bytes<-->word handling
-import sys # for stdin
+import sys # for args, stdin
 
 SYN_PTR = 0
 SYN_MEM = [0] * 32768
