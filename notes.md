@@ -64,22 +64,9 @@ Returning to the fork at the passage and venturing to the `darkness`, we now `co
 
     _ + _ * _^2 + _^3 - _ = 399
 
-#### Mathematical!
-In other words, we seek a solution to the equation *a* + *bc*<sup>2</sup> + *d*<sup>3</sup> - e = 399, where {*a*, *b*, *c*, *d*, *e*} = {2, 3, 5, 7, 9}.
-
-The Synacor challenge being, of course, a programming-orientated exercise, the usual response to this problem is to code up a quick program to loop through all 5! = 120 permutations of the coins to find which one satisfies the equation. Being a mathematician, however – could you tell from the italics? – I will solve this the [*proper* way](https://xkcd.com/435/): with a scientific calculator and some thinking (\*insert insufferably smug expression here\*).
-
-Firstly, note that -7 ≤ *a* − *e* ≤ 7, so 392 ≤ *bc*<sup>2</sup> + *d*<sup>3</sup> ≤ 406. Furthermore, since *bc*<sup>2</sup> is always positive, *d*<sup>3</sup> ≤ 406. We can thus rule out *d* = 9, so *d* ≤ 7, *d*<sup>3</sup> ≤ 343 and *bc*<sup>2</sup> ≤ 63, also ruling out *c* = 7 and *c* = 9. Furthermore, since 392 ≤ *bc*<sup>2</sup> + *d*<sup>3</sup>, *d*<sup>3</sup> ≥ 329. Since we already knew *d* ≤ 7, *d* = 7.
-
-Consequently, 49 ≤ *bc*<sup>2</sup> ≤ 63. It is trivial to check that no solutions satisfy this for *c* = 2 and *c* = 3, so *c* = 5 and *b* = 2. The values of *a* and *e* are now easily found.
-
-The solution is:
+We know the `_ * _^2 + _^3` terms must be close to 399, and working from this by trial and error, the solution is:
 
     9 + 2 * 5^2 + 7^3 - 3 = 399
-
-**BOOM!**
-
-(Well, actually all I did the first time was get up to *d* ≤ 7, then use guess and check.)
 
 The coins should therefore be `use`d in the order: `blue`, `red`, `shiny`, `concave`, `corroded`.
 
