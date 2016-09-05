@@ -81,7 +81,7 @@ with open(sys.argv[1], 'rb') as data:
 		elif word == 2: #PUSH
 			print('{:04x} push {}'.format(pos, readOp().get()))
 		elif word == 3: #POP
-			print('{:04x} pop {}'.format(pos, readOp().set()))
+			print('{:04x} pop  {}'.format(pos, readOp().set()))
 		elif word == 4: #EQ
 			print('{:04x} eq   {} {} {}'.format(pos, readOp().set(), readOp().get(), readOp().get()))
 		elif word == 5: #GT
