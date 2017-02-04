@@ -136,7 +136,7 @@ So far so good, but what's this??
 
 Aah, so it looks like each room is stored as a block of 5 words, the first four pointers to lengths of words: a string (the title), a string (the text), a list of pointers to strings (the exit names) and a list of pointers to more rooms (the exits), followed by a memory location to `call` (or `0000`).
 
-Further analysis suggests that this particular call relates to the step counter for the Grues in the maze.
+Further analysis suggests that this particular call relates to keeping track of which rooms in the maze have been visited, which is used to determine whether the code is shown when arriving at the designated room in the maze.
 
 We probably could have reached these same conclusions by analysing the suspicious-looking block of code following the room definitions, but assembly makes my head spin so ¯\\\_(ツ)\_/¯
 

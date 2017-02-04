@@ -2,3 +2,5 @@
 /dumps
 /finish.htm
 /tools/ackermann.o
+/tools/venv
+/tools/*.pdf
