@@ -15,8 +15,10 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import collections
+import re
 import struct
-import textwrap
+import sys
 
 rooms = {}
 
@@ -32,39 +34,9 @@ class Room:
 		self.description = None
 		self.doors = []
 		self.callback = None
-	
-	def __str__(self):
-		return """<
-{:04x}: {}
-<br/>{}
-{}
->""".format(
-			self.location,
-			self.name,
-			'<br/>'.join(textwrap.wrap(textwrap.shorten(self.description, 300), 50)),
-			'<br/><font point-size="10">Callback: {:04x}</font>'.format(self.callback) if self.callback != 0 else '')
-
-items = {}
-
-class Item:
-	def __init__(self):
-		self.location = None
-		self.name = None
-		self.description = None
-		self.room = None
-		self.callback = None
-	
-	
-	def __str__(self):
-		return """<
-{:04x}: {}
-<br/>{}
-{}
->""".format(
-			self.location,
-			self.name,
-			'<br/>'.join(textwrap.wrap(textwrap.shorten(self.description, 300), 50)),
-			'<br/><font point-size="10">Callback: {:04x}</font>'.format(self.callback) if self.callback != 0 else '')
+		
+		self.is_operator = False
+		self.mutate_value = None
 
 # Read code into memory
 SYN_MEM = [0] * 32768
@@ -91,17 +63,17 @@ def traverse_room(location):
 	
 	room = Room()
 	room.location = location
-	rooms[location] = room
 	
 	# Name
 	len_name = SYN_MEM[ptr_name]
 	room.name = bytes(SYN_MEM[ptr_name+1:ptr_name+1+len_name]).decode('ascii')
 	
-	# Description
-	if ptr_description == 0x6952:
-		# o_O
-		ptr_description = 0x1f4f
+	if room.name.startswith('Vault '):
+		rooms[location] = room
+	else:
+		return
 	
+	# Description
 	len_description = SYN_MEM[ptr_description]
 	room.description = bytes(SYN_MEM[ptr_description+1:ptr_description+1+len_description]).decode('ascii')
 	
@@ -131,68 +103,53 @@ def traverse_room(location):
 		
 		room.doors.append(door)
 	
+	# Parse description
+	if room.name == 'Vault Antechamber':
+		room.mutate_value = lambda val: '22'
+	else:
+		match = re.search(r"mosaic depicting the number '(.*)'", room.description)
+		if match:
+			room_value = match.group(1)
+			room.mutate_value = lambda val: val + room_value + ')'
+		else:
+			match = re.search(r"mosaic depicting a '(.*)' symbol", room.description)
+			if match:
+				room.is_operator = True
+				room_operator = match.group(1)
+				room.mutate_value = lambda val: '(' + val + room_operator
+			else:
+				raise Exception('Unable to parse description: {}'.format(room.description))
+	
 	for door in room.doors:
 		traverse_room(door.destination)
 
-def traverse_item(location):
-	if location in items:
-		return
-	
-	# Read data from initial struct
-	ptr_name = SYN_MEM[location]
-	ptr_description = SYN_MEM[location + 1]
-	ptr_room = SYN_MEM[location + 2]
-	ptr_callback = SYN_MEM[location + 3]
-	
-	item = Item()
-	item.location = location
-	items[location] = item
-	
-	# Name
-	len_name = SYN_MEM[ptr_name]
-	item.name = bytes(SYN_MEM[ptr_name+1:ptr_name+1+len_name]).decode('ascii')
-	
-	# Description
-	len_description = SYN_MEM[ptr_description]
-	item.description = bytes(SYN_MEM[ptr_description+1:ptr_description+1+len_description]).decode('ascii')
-	
-	# Callback
-	item.callback = ptr_callback
-	
-	# Room
-	if ptr_room != 0x7fff:
-		item.room = ptr_room
-		if ptr_room not in rooms:
-			traverse_room(ptr_room)
-
 # Seed rooms
-traverse_room(0x090d) # Foothills
-traverse_room(0x09b8) # Synacor Headquarters
-traverse_room(0x09c2) # Beachside
+traverse_room(0x0a3f)
 
-# Exhaustive check
-for i in range(0x090d, 0x099e, 5):
-	if i not in rooms:
-		traverse_room(i)
-for i in range(0x099f, 0x0a6c, 5):
-	if i not in rooms:
-		traverse_room(i)
-for i in range(0x0a6c, 0x0aac, 4):
-	if i not in items:
-		traverse_item(i)
+# Breadth-first search
 
-import graphviz
+queue = collections.deque()
+initial_status = ([(None, 0x0a3f)], None) # current path, previous value
+queue.append(initial_status)
 
-dot = graphviz.Digraph()
-
-for code, room in rooms.items():
-	dot.node('{:04x}'.format(code), str(room))
-	for door in room.doors:
-		dot.edge('{:04x}'.format(code), '{:04x}'.format(door.destination), door.name)
-
-for code, item in items.items():
-	dot.node('{:04x}'.format(code), str(item), style='dashed')
-	if item.room is not None:
-		dot.edge('{:04x}'.format(item.room), '{:04x}'.format(code), style='dashed')
-
-print(dot.source)
+while True:
+	current_status = queue.popleft()
+	current_room = current_status[0][-1][1]
+	current_value = rooms[current_room].mutate_value(current_status[1])
+	
+	print(current_status)
+	print(current_value)
+	
+	if current_room == 0x0a12: # Vault Door
+		if eval(current_value) == 30:
+			# We have reached the goal
+			sys.exit(0)
+		else:
+			# We must not enter the vault door unless we have the right number, else the orb will disappear
+			# Do not continue this line of searching
+			continue
+	
+	for edge in rooms[current_room].doors:
+		if edge.destination in rooms:
+			new_status = (current_status[0] + [(edge.name, edge.destination)], current_value)
+			queue.append(new_status)

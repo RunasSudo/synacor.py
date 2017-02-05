@@ -47,7 +47,7 @@ At the foothills, the first area of the RPG:
 Required opcodes: All except `halt`
 
 ### Code 5 (Twisty passages)
-After falling down the bridge, there is an `empty lantern` to the `east`, which should be `take`n. To the `west`, there is a passage, where one can take the `ladder` down or venture into the `darkness`. Attempting to venture into the `darkness` at this point will result in being eaten by Grues.
+After falling down the bridge, there is an `empty lantern` to the `east`, which should be `take`n. To the `west`, there is a `passage`, where one can take the `ladder` down or venture into the `darkness`. Attempting to venture into the `darkness` at this point will result in being eaten by Grues.
 
 Taking the `ladder` down, then traversing `west`, `south`, `north`, a code is obtained:
 
@@ -60,7 +60,7 @@ Taking the `ladder` down, then traversing `west`, `south`, `north`, a code is ob
 There is also a can, which can be `take`n and `use`d to fill the lantern, which can then be `use`d to become lit, and which will keep away Grues.
 
 ### Code 6 (Dark passage, ruins and teleporter)
-Returning to the fork at the passage and venturing to the `darkness`, we now `continue` `west`ward to the ruins. The `north` door is locked, but dotted elsewhere around the ruins are a `red coin` (2 dots), `corroded coin` (triangle = 3 sides), `shiny coin` (pentagon = 5 sides), `concave coin` (7 dots) and `blue coin` (9 dots) which should be `take`n and `look`ed at, and the equation:
+Returning to the fork at the passage and venturing to the `darkness`, we now `continue` `west`ward several times, then `north`ward several times to the ruins. The `north` door is locked, but dotted elsewhere around the ruins are a `red coin` (2 dots), `corroded coin` (triangle = 3 sides), `shiny coin` (pentagon = 5 sides), `concave coin` (7 dots) and `blue coin` (9 dots) which should be `take`n and `look`ed at, and the equation:
 
     _ + _ * _^2 + _^3 - _ = 399
 
@@ -248,7 +248,7 @@ I've implemented this as a debug function to prepare the teleporter:
 ### Code 8 (Beach and vault)
 Arriving at the beach, traverse `north`ward until you reach a fork. To the `east` lies a `journal` containing clues as to the upcoming puzzle.
 
-With the ability to map the puzzle (possibly with the help of our knowledge of the map data format), and (unlike the adventurers, it seems) a grasp of basic arithmetic, this puzzle shouldn't be too difficult to solve. I couldn't do better than [paiv](https://github.com/paiv)'s [solution](https://paiv.github.io/blog/2016/04/24/synacor-challenge.html) ([code](https://github.com/paiv/synacor-challenge/tree/master/code/src/vault), [map](https://github.com/paiv/synacor-challenge/blob/master/notes/vault-locks.svg)), and it doesn't look like there's much parallelisation to do, so I'll leave you with those links.
+With the ability to map the puzzle (possibly with the help of our knowledge of the map data format), and (unlike the adventurers, it seems) a grasp of basic arithmetic, this puzzle shouldn't be too difficult to solve. Armed with our map data, we can now do a [breadth-first search to find the shortest solution](https://github.com/RunasSudo/synacor.py/blob/master/tools/bfs.py).
 
 The solution is:
 
