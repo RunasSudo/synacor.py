@@ -1,7 +1,11 @@
 # Spoilers!
 These solution notes are **very** detailed! Reading them before tackling the challenge yourself will dispossess you of the masochistic joy of working through the best worst use of your spare time mankind has ever devised! Read on at your peril!
 
-Note: Codes seem to be unique for every user.
+Note 1: Codes seem to be unique for every user.
+
+Note 2: Numeric values in `monospace` font are in hexadecimal.
+
+Note 3: For some reason, I decided to number the registers `R1` through `R8`, contrary to the spec…
 
 ## The programming codes
 

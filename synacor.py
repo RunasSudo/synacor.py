@@ -24,6 +24,8 @@ SYN_REG = [0] * 8
 SYN_STK = []
 SYN_STDIN_BUF = []
 
+DBG_CSTK = []
+
 class OpLiteral:
 	def __init__(self, value):
 		self.value = value;
@@ -117,11 +119,14 @@ while True:
 		SYN_MEM[a] = b # order of operations
 	elif instruction == 17: #CALL
 		SYN_STK.append(SYN_PTR + 1) # skip one word for the operand
-		SYN_PTR = swallowOp().get()
+		addr = swallowOp().get()
+		DBG_CSTK.append(addr)
+		SYN_PTR = addr
 	elif instruction == 18: #RET
 		if len(SYN_STK) == 0:
 			raise Exception('Attempted to return with empty stack at {}'.format(SYN_PTR))
 		SYN_PTR = SYN_STK.pop()
+		DBG_CSTK.pop()
 	elif instruction == 19: #OUT
 		print(chr(swallowOp().get()), end='')
 	elif instruction == 20: #IN
