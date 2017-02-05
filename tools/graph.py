@@ -15,8 +15,11 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import graphviz
 import struct
 import textwrap
+
+dot = graphviz.Digraph()
 
 rooms = {}
 
@@ -32,6 +35,8 @@ class Room:
 		self.description = None
 		self.doors = []
 		self.callback = None
+		
+		self.digraph = None
 	
 	def __str__(self):
 		return """<
@@ -53,7 +58,8 @@ class Item:
 		self.description = None
 		self.room = None
 		self.callback = None
-	
+		
+		self.digraph = None
 	
 	def __str__(self):
 		return """<
@@ -78,7 +84,7 @@ with open('../dumps/init.raw', 'rb') as data:
 		SYN_MEM[i] = struct.unpack('<H', byteData)[0]
 		i += 1
 
-def traverse_room(location):
+def traverse_room(location, digraph=dot):
 	if location in rooms:
 		return
 	
@@ -91,6 +97,7 @@ def traverse_room(location):
 	
 	room = Room()
 	room.location = location
+	room.digraph = digraph
 	rooms[location] = room
 	
 	# Name
@@ -132,9 +139,9 @@ def traverse_room(location):
 		room.doors.append(door)
 	
 	for door in room.doors:
-		traverse_room(door.destination)
+		traverse_room(door.destination, digraph)
 
-def traverse_item(location):
+def traverse_item(location, digraph=dot):
 	if location in items:
 		return
 	
@@ -146,6 +153,7 @@ def traverse_item(location):
 	
 	item = Item()
 	item.location = location
+	item.digraph = digraph
 	items[location] = item
 	
 	# Name
@@ -163,12 +171,18 @@ def traverse_item(location):
 	if ptr_room != 0x7fff:
 		item.room = ptr_room
 		if ptr_room not in rooms:
-			traverse_room(ptr_room)
+			traverse_room(ptr_room, digraph)
+
+#dot_foothills = graphviz.Digraph()
+#dot_headquarters = graphviz.Digraph()
+#dot_beachside = graphviz.Digraph()
+
+dot_foothills, dot_headquarters, dot_beachside = dot, dot, dot
 
 # Seed rooms
-traverse_room(0x090d) # Foothills
-traverse_room(0x09b8) # Synacor Headquarters
-traverse_room(0x09c2) # Beachside
+traverse_room(0x090d, dot_foothills) # Foothills
+traverse_room(0x09b8, dot_headquarters) # Synacor Headquarters
+traverse_room(0x09c2, dot_beachside) # Beachside
 
 # Exhaustive check
 for i in range(0x090d, 0x099e, 5):
@@ -181,18 +195,30 @@ for i in range(0x0a6c, 0x0aac, 4):
 	if i not in items:
 		traverse_item(i)
 
-import graphviz
-
-dot = graphviz.Digraph()
-
 for code, room in rooms.items():
-	dot.node('{:04x}'.format(code), str(room))
+	room.digraph.node('{:04x}'.format(code), str(room))
 	for door in room.doors:
-		dot.edge('{:04x}'.format(code), '{:04x}'.format(door.destination), door.name)
+		room.digraph.edge('{:04x}'.format(code), '{:04x}'.format(door.destination), door.name)
 
 for code, item in items.items():
-	dot.node('{:04x}'.format(code), str(item), style='dashed')
+	item.digraph.node('{:04x}'.format(code), str(item), style='dashed')
 	if item.room is not None:
-		dot.edge('{:04x}'.format(item.room), '{:04x}'.format(code), style='dashed')
+		item.digraph.edge('{:04x}'.format(item.room), '{:04x}'.format(code), style='dashed')
+
+#dot.subgraph(dot_foothills)
+#dot.subgraph(dot_headquarters)
+#dot.subgraph(dot_beachside)
+
+# Manually add some additional edges
+dot.edge('0976', '0a58', 'no light', style='dashed')
+dot.edge('097b', '0a58', 'no light', style='dashed')
+dot.edge('0980', '0a58', 'no light', style='dashed')
+dot.edge('0985', '0a58', 'no light', style='dashed')
+dot.edge('098a', '0a58', 'no light', style='dashed')
+dot.edge('096c', '0971', style='dashed')
+dot.edge('0a7c', '0a74', 'use', style='dashed')
+dot.edge('0a74', '0a78', 'use', style='dashed')
+dot.edge('099f', '09b8', 'teleporter', style='dashed')
+dot.edge('09b8', '09c2', 'teleporter', style='dashed')
 
 print(dot.source)
