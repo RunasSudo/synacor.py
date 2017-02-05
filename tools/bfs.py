@@ -137,12 +137,14 @@ while True:
 	current_room = current_status[0][-1][1]
 	current_value = rooms[current_room].mutate_value(current_status[1])
 	
-	print(current_status)
-	print(current_value)
+	#print(current_status)
+	#print(current_value)
 	
 	if current_room == 0x0a12: # Vault Door
 		if eval(current_value) == 30:
 			# We have reached the goal
+			print(current_status)
+			print(current_value)
 			sys.exit(0)
 		else:
 			# We must not enter the vault door unless we have the right number, else the orb will disappear
