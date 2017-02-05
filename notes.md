@@ -277,3 +277,9 @@ Navigating through the maze:
     Congratulations; you have reached the end of the challenge!
 
 Given that you've made it this far (You didn't cheat, did you? I did warn you at the beginning!) this last challenge should be no problem.
+
+## Putting it all together
+
+Now that we've solved the puzzle, the only thing left is to write a [tool-assisted speed-run](https://github.com/RunasSudo/synacor.py/blob/master/dbg_speedrun.py) to completely break any given instance of the challenge in 5 seconds.
+
+    time python -u synacor.py dbg_speedrun | head -n 849
