@@ -111,3 +111,144 @@ In other words, a similar string-handling subroutine is called, but instead of `
 Now we have everything we need to [extract these encrypted (double-encrypted??) strings](https://github.com/RunasSudo/synacor.py/blob/master/tools/decrypt_strings.py) from the binary!
 
 Only the self-test completion code appears to be stored there, though, so I'm not sure what the point of encrypting those was…
+
+## The codes
+
+We may not have the codes themselves, but we can now easily locate where they are printed. The tablet code, for example, is conveniently sandwiched between strings `6ed1` and `6ef1`. Thus the code we are looking for is:
+
+    1290 set  R1 1092
+    1293 set  R2 650a
+    1296 set  R3 7fff
+    1299 set  R4 6eed
+    129c call 0731
+
+Looking into `0731`:
+
+    0731 push R4
+    0733 push R5
+    0735 push R6
+    0737 push R7
+    0739 set  R7 0001
+    073c add  R5 R4 R7
+    0740 rmem R5 R5
+    0743 add  R6 17ed R7
+    0747 wmem R6 R5
+    074a add  R7 R7 0001
+    074e rmem R6 17ed
+    0751 gt   R5 R7 R6
+    0755 jf   R5 073c
+    0758 set  R4 0000
+    075b set  R5 0000
+    075e rmem R6 17ed
+    0761 mod  R6 R5 R6
+    0765 add  R6 R6 17ed
+    0769 add  R6 R6 0001
+    076d rmem R7 R6
+    0770 mult R7 R7 1481
+    0774 add  R7 R7 3039
+    0778 wmem R6 R7
+    077b push R1
+    077d push R2
+    077f set  R2 R7
+    0782 call 084d
+    0784 set  R7 R1
+    0787 pop  R2
+    0789 pop  R1
+    078b rmem R6 R2
+    078e mod  R7 R7 R6
+    0792 add  R7 R7 0001
+    0796 gt   R6 R7 R3
+    079a jt   R6 07a0
+    079d set  R4 0001
+    07a0 add  R7 R7 R2
+    07a4 rmem R7 R7
+    07a7 add  R5 R5 0001
+    07ab add  R6 R5 17f1
+    07af wmem R6 R7
+    07b2 rmem R6 17f1
+    07b5 eq   R6 R5 R6
+    07b9 jf   R6 075e
+    07bc jf   R4 0758
+    07bf push R1
+    07c1 set  R1 17f1
+    07c4 call 05ee
+    07c6 pop  R1
+    07c8 pop  R7
+    07ca pop  R6
+    07cc pop  R5
+    07ce pop  R4
+    07d0 ret
+
+Umm… Sorry, could you repeat that?
+
+Rewriting this again in more friendly terms:
+
+```c
+// R1: A seed of sorts - the same for all users
+// R2: The length and alphabet to use, usually 650a, but 653f for the mirror
+// R3: Usually 7fff, but 0004 for the mirror
+// R4: An initialisation vector of sorts - contents different for every user - points to the length, but this is always 3
+0731(R1, R2, R3, R4) {
+	// copy the string at R4 to 17ed
+	R7 = 0001;
+	do {
+		R5 = R4 + R7;
+		R5 = [R5];
+		R6 = 17ed + R7;
+		[R6] = R5;
+		R7 = R7 + 0001;
+		R6 = [17ed]; // 3, the length - this never seems to change
+	} while (R7 <= R6);
+	
+	// the string at 17ed is now what was at R4
+	do {
+		R4 = 0000; // done flag
+		R5 = 0000; // index
+		do {
+			R6 = [17ed]; // 3, the length
+			R6 = R5 % R6;
+			R6 = R6 + 17ed;
+			R6 = R6 + 0001; // will cycle through three addresses of 17ed/R4 string: 17ee, 17ef, 17f0
+			R7 = [R6];
+			R7 = R7 * 1481;
+			R7 = R7 + 3039;
+			[R6] = R7; // mutate that value of the 17ed string
+			R7 = R1 ^ R7; // combine R1 into R7
+			R6 = [R2]; // length of the alphabet
+			R7 = R7 % R6;
+			R7 = R7 + 0001; // calculate index in alphabet
+			if (R7 <= R3) {
+				R4 = 0001; // we are done with the entire code - this returns immediately for all except the mirror
+			}
+			R7 = R7 + R2; // calculate address of letter to use
+			R7 = [R7]; // the letter to use
+			R5 = R5 + 0001; // increment the index
+			R6 = R5 + 17f1; // index of new letter in code
+			[R6] = R7; // set the letter
+			R6 = [17f1]; // length of the code: twelve letters
+		} while (R5 != R6); // loop until we've generated all the letters
+	} while (!R4);
+	print(17f1);
+}
+```
+
+Re-implementing this in Python, we can now extract the code for the tablet directly from the binary!
+
+Unfortunately, each of the other codes uses an `R1` based on the solution to the puzzle. In the case of the maze code:
+
+    0f03 rmem R1 0e8e
+
+The value at `0e8e` is derived from which rooms are visited in the maze, as mentioned in the main note file. Armed with our [trusty map](https://github.com/RunasSudo/synacor.py/blob/master/tools/graph.py), and cross-referencing the callbacks with the files, we identify:
+
+* Twisty passages entrance, `0949`: Calls `0e9e`, resets `0e8e` to `0000`.
+* West to `095d`: Calls `0ec0`: `OR`s `0e8e` with `0008`.
+* South to `0926`: Calls `0eca`: `OR`s `0e8e` with `0010`.
+* North to `096c`: Calls `0ede`: `OR`s `0e8e` with `0040`.
+
+Putting it all together, the final value at `0e8e` is `0008 | 0010 | 0040` = `0058`.
+
+Similarly, the `R1` for the teleporter code is the value of `R8` from the Ackermann function, which we determined earlier to be `6486`:
+
+    1592 set  R1 R8
+
+The remaining two codes, for the coins and the vault, are more complicated still, but follow the same pattern of determining `R1` based on the player's history.

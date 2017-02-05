@@ -24,6 +24,7 @@ SYN_REG = [0] * 8
 SYN_STK = []
 SYN_STDIN_BUF = []
 
+DBG_FLAG = False
 DBG_CSTK = []
 
 class OpLiteral:
@@ -72,6 +73,9 @@ else:
 
 # Begin execution
 while True:
+	if DBG_FLAG:
+		import pdb; pdb.set_trace()
+	
 	instruction = swallowOp().get()
 	
 	if instruction == 21: #NOP
