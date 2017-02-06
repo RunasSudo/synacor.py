@@ -21,6 +21,7 @@ import sys
 IV_LEN = 3
 CODE_LEN = 12
 
+# Emulate 0731
 def generate_code(R1, R2, R3, R4):
 	R2data = SYN_MEM[R2+1:R2+1+SYN_MEM[R2]]
 	R4data = SYN_MEM[R4+1:R4+1+SYN_MEM[R4]]
@@ -63,12 +64,12 @@ for R2 in range(0x17b4, 0x7562):
 	R1 ^= 0x4154
 	SYN_MEM[R2] = R1
 
-# Look for calls to 0731
+# Calls to 0731
 CODE_PARAMS = [
 	(0x0058, 0x650a, 0x7fff, 0x6e8b), # R1 from the maze
 	(0x1092, 0x650a, 0x7fff, 0x6eed),
 	(0x6486, 0x650a, 0x7fff, 0x7239), # R1 is R8 from Ackermann
-	# 162e is a bit tricky
+	(0x0b3b, 0x650a, 0x7fff, 0x73df), # R1 from the dots on the coins
 	# 1691 is a bit tricky
 ]
 

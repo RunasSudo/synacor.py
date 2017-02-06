@@ -130,7 +130,9 @@ while True:
 		if len(SYN_STK) == 0:
 			raise Exception('Attempted to return with empty stack at {}'.format(SYN_PTR))
 		SYN_PTR = SYN_STK.pop()
-		DBG_CSTK.pop()
+		
+		if len(DBG_CSTK) > 0:
+			DBG_CSTK.pop()
 	elif instruction == 19: #OUT
 		print(chr(swallowOp().get()), end='')
 	elif instruction == 20: #IN

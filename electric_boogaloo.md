@@ -252,3 +252,27 @@ Similarly, the `R1` for the teleporter code is the value of `R8` from the Ackerm
     1592 set  R1 R8
 
 The remaining two codes, for the coins and the vault, are more complicated still, but follow the same pattern of determining `R1` based on the player's history.
+
+For the coins, the call to `0731` derives an `R1` from the values at memory locations `69de` to `69e2`. One would presume that this relates to the order in which coins are inserted into the puzzle, and following the trail of callbacks for the coins confirms this. The important lines are:
+
+    13c0 rmem R3 099e # nr of coins inserted
+    13c3 add  R3 R3 69dd
+    13c7 add  R3 R3 0001
+    13cb wmem R3 R2 # R2 is the number of dots on the coin
+
+Thus the values should be 9, 2, 5, 7 and 3: the missing numbers in the solved equation.
+
+It is now trivial to generate the correct value of `R1`. Based on the code beginning, `15fd`:
+
+```python
+data_69de = [9, 2, 5, 7, 3]
+
+R1 = 0
+for i in range(len(data_69de)):
+	R2 = data_69de[i]
+	R1 = R1 + R2
+	R1 = (R1 * 0x7bac) % 0x8000
+	R1 = R1 ^ R2
+```
+
+The result is `0b3b`.
