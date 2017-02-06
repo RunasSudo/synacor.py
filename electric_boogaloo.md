@@ -342,4 +342,4 @@ result = (data_0f73 ^ data_0f74) ^ data_0f75
 print('0x{:04x}'.format(result))
 ```
 
-And with that, we can now programmatically generate every code for any challenge binary!
+And with that, we can now [programmatically extract *every single code* given any challenge .tgz!](https://github.com/RunasSudo/synacor.py/blob/master/tools/generate_codes.py)
