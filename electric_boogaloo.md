@@ -276,3 +276,70 @@ for i in range(len(data_69de)):
 ```
 
 The result is `0b3b`.
+
+On to the final code, now: the vault lock. At `1679`, `R1` is computed as `([0f73] ^ [0f74]) ^ [0f75]`. Searching the code for references to these, we find:
+
+    1236 wmem 0f70 0016 // weight
+    1239 wmem 0f71 0000 // counter
+    123c wmem 0f72 0000
+    123f wmem 0f73 0000
+    1242 wmem 0f74 0000
+    1245 wmem 0f75 0000
+
+It would be nice if these were just the intermediate weights of the orb, but alas the algorithm appears more complex than that.
+
+Nevertheless, unravelling the various functions which reference those memory addresses:
+
+```python
+counter = 0
+data_0f73 = 0
+data_0f74 = 0
+data_0f75 = 0
+
+# 08c8
+def rotatey_thing(R1, R2):
+	while R2 != 0:
+		R2 = (R2 + 0x7fff) % 0x8000
+		R3 = R1 & 0x4000
+		R1 = (R1 * 0x0002) % 0x8000
+		if R3 == 0:
+			continue
+		R1 = R1 | 0x0001
+	return R1
+
+# 11a3
+def mutate(R1val, R2, R3):
+	return rotatey_thing(R1val, R2) ^ R3
+
+# 1135
+def update(value, room):
+	global counter, data_0f73, data_0f74, data_0f75
+	
+	if counter <= 0x752f:
+		counter += 1
+	data_0f73 = mutate(data_0f73, counter + 2, room)
+	data_0f74 = mutate(data_0f74, counter * counter, room * room)
+	data_0f75 = mutate(data_0f75, 0x000d, (value * 9) * (value * 9))
+
+update(0x0000, 0x0008) # north 1000
+update(0x0004, 0x0009) # east 1011
+update(0x0001, 0x000a) # east 1022
+update(0x000b, 0x0006) # north 0fde
+update(0x0002, 0x0005) # west 0fcd
+update(0x0004, 0x0009) # south 1011
+update(0x0001, 0x000a) # east 1022
+update(0x0012, 0x000b) # east 1033
+update(0x0001, 0x000a) # west 1022
+update(0x000b, 0x0006) # north 0fde
+update(0x0001, 0x0002) # north 0f98
+update(0x0001, 0x0003) # east 0fa9
+print(data_0f73)
+print(data_0f74)
+print(data_0f75)
+
+result = (data_0f73 ^ data_0f74) ^ data_0f75
+
+print('0x{:04x}'.format(result))
+```
+
+And with that, we can now programmatically generate every code for any challenge binary!

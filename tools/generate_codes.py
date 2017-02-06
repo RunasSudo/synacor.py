@@ -70,7 +70,7 @@ CODE_PARAMS = [
 	(0x1092, 0x650a, 0x7fff, 0x6eed),
 	(0x6486, 0x650a, 0x7fff, 0x7239), # R1 is R8 from Ackermann
 	(0x0b3b, 0x650a, 0x7fff, 0x73df), # R1 from the dots on the coins
-	# 1691 is a bit tricky
+	(0x7714, 0x653f, 0x0004, 0x74f6), # R1 based on solution to vaults
 ]
 
 for cp in CODE_PARAMS:
