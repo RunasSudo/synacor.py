@@ -30,6 +30,9 @@ class OpLiteral(Operand):
 		return self.value
 	def set(self, cpu, value):
 		raise Exception('Attempted to set literal value {} to {} at {}'.format(self.value, value, cpu.SYN_PTR))
+	
+	def describe(self):
+		return '{:04x}'.format(self.value)
 
 class OpRegister(Operand):
 	def __init__(self, register):
@@ -38,6 +41,9 @@ class OpRegister(Operand):
 		return cpu.SYN_REG[self.register]
 	def set(self, cpu, value):
 		cpu.SYN_REG[self.register] = value
+	
+	def describe(self):
+		return 'R{}'.format(self.register)
 
 instructions_by_opcode = {}
 instructions_by_name = {}
@@ -57,6 +63,12 @@ def instruction(opcode, name, nargs=0):
 class Instruction:
 	def __init__(self):
 		self.args = []
+	
+	def describe(self):
+		description = '{: <4}'.format(self.name)
+		for i in range(self.nargs):
+			description += ' {}'.format(self.args[i].describe())
+		return description
 	
 	@staticmethod
 	def next_instruction(data, idx):
