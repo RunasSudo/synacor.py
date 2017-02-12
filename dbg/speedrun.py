@@ -97,16 +97,5 @@ take mirror
 use mirror
 """
 
-# Read code into memory
-SYN_PTR = 0
-with open('challenge.bin', 'rb') as data:
-	while True:
-		byteData = data.read(2)
-		if len(byteData) < 2:
-			break
-		SYN_MEM[SYN_PTR] = struct.unpack('<H', byteData)[0]
-		SYN_PTR += 1
-SYN_PTR = 0
-
 # We cannot directly set SYN_STDIN_BUF since debug commands are processed only at stdin read
 sys.stdin = io.StringIO(transcript)

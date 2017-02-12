@@ -23,5 +23,10 @@ cpu = CPU()
 with open(sys.argv[1], 'rb') as data:
 	cpu.SYN_MEM = memory_from_file(data)
 
+if len(sys.argv) > 2:
+	dbg_args = sys.argv[2:]
+	with open(dbg_args[0] + '.py', 'r') as f:
+		exec(f.read(), globals(), locals())
+
 while True:
 	cpu.step()

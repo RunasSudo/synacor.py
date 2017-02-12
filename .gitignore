@@ -4,3 +4,5 @@
 /tools/ackermann.o
 /tools/venv
 /tools/*.pdf
+
+__pycache__

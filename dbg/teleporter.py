@@ -1,5 +1,5 @@
 #    synacor.py - An implementation of the Synacor Challenge
-#    Copyright © 2017  RunasSudo
+#    Copyright © 2016–2017  RunasSudo
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Affero General Public License as published by
@@ -14,26 +14,10 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import pickle
+# Set R7 to 6486
+cpu.SYN_REG[7] = 0x6486
 
-# Read code into memory
-SYN_MEM = [0] * 32768
+# Patch instructions 1571 to 1579 inclusive with nop's
+cpu.SYN_MEM[0x1571:0x157a] = [21] * 9
 
-with open('challenge.bin', 'rb') as data:
-	i = 0
-	while True:
-		byteData = data.read(2)
-		if len(byteData) < 2:
-			break
-		SYN_MEM[i] = struct.unpack('<H', byteData)[0]
-		i += 1
-
-# Emulate 06bb
-for R1 in range(0x17b4, 0x7562):
-	R0 = SYN_MEM[R1]
-	R0 ^= pow(R1, 2, 32768)
-	R0 ^= 0x4154
-	SYN_MEM[R1] = R0
-
-# Jump past self-test
-SYN_PTR = 0x0377
+print('Patched. Ready to run "use teleporter".')

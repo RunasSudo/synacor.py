@@ -88,7 +88,7 @@ Proceed to the `north` door and `use` the `teleporter` to obtain the code:
 ## The true-believers-only codes
 At this point, you will almost certainly need to delve into the code of the challenge, if you haven't already. The code in `challenge.bin` past the self-test is encrypted, so disassembling and analysing the code is most easily done based off a memory dump from a running copy:
 
-    .dbg_dump dumps/init (From inside the game)
+    .dbg/dump dumps/init (From inside the game)
     ./tools/dump_to_raw.py dumps/init dumps/init.raw
     ./tools/disasm.py dumps/init.raw > dumps/init.asm
 
@@ -232,7 +232,7 @@ Running the algorithm, the correct value is revealed to be `0x6486`. Now we simp
 
 I've implemented this as a debug function to prepare the teleporter:
 
-    > .dbg_teleporter
+    > .dbg/teleporter
     Patched. Ready to run "use teleporter".
     > use teleporter
     
@@ -284,4 +284,4 @@ Given that you've made it this far (You didn't cheat, did you? I did warn you at
 
 Now that we've solved the puzzle, the only thing left is to write a [tool-assisted speed-run](https://github.com/RunasSudo/synacor.py/blob/master/dbg_speedrun.py) to completely break any given instance of the challenge in 5 seconds.
 
-    time python -u synacor.py dbg_speedrun | head -n 849
+    time python -u synacor.py challenge.bin dbg/speedrun | head -n 849

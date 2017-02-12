@@ -196,6 +196,12 @@ class InstructionIn(Instruction):
 		
 		while len(cpu.SYN_STDIN_BUF) == 0:
 			line = sys.stdin.readline()
-			cpu.SYN_STDIN_BUF = list(line)
+			if line.startswith('.'):
+				# Debug command
+				dbg_args = line[1:].split()
+				with open(dbg_args[0] + '.py', 'r') as f:
+					exec(f.read(), globals(), locals())
+			else:
+				cpu.SYN_STDIN_BUF = list(line)
 		
 		self.args[0].set(cpu, ord(cpu.SYN_STDIN_BUF.pop(0)))

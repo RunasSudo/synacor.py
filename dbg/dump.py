@@ -1,5 +1,5 @@
 #    synacor.py - An implementation of the Synacor Challenge
-#    Copyright © 2016  RunasSudo
+#    Copyright © 2016–2017  RunasSudo
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Affero General Public License as published by
@@ -17,12 +17,14 @@
 import pickle
 
 if len(dbg_args) < 2:
-	print('Usage: {} {} <file>'.format(sys.argv[0], dbg_args[0]))
+	print('Usage: .{} <file>'.format(dbg_args[0]))
 else:
-	with open(dbg_args[1], 'rb') as f:
-		model = pickle.load(f)
+	model = {
+		'SYN_PTR': cpu.SYN_PTR,
+		'SYN_MEM': cpu.SYN_MEM,
+		'SYN_REG': cpu.SYN_REG,
+		'SYN_STK': cpu.SYN_STK
+	}
 	
-	SYN_PTR = model['SYN_PTR']
-	SYN_MEM = model['SYN_MEM']
-	SYN_REG = model['SYN_REG']
-	SYN_STK = model['SYN_STK']
+	with open(dbg_args[1], 'wb') as f:
+		pickle.dump(model, f)
