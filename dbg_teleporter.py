@@ -14,7 +14,7 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# Set R8 to 6486
+# Set R7 to 6486
 SYN_REG[7] = 0x6486
 
 # Patch instructions 1571 to 1579 inclusive with nop's

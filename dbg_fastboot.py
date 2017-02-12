@@ -29,11 +29,11 @@ with open('challenge.bin', 'rb') as data:
 		i += 1
 
 # Emulate 06bb
-for R2 in range(0x17b4, 0x7562):
-	R1 = SYN_MEM[R2]
-	R1 ^= pow(R2, 2, 32768)
-	R1 ^= 0x4154
-	SYN_MEM[R2] = R1
+for R1 in range(0x17b4, 0x7562):
+	R0 = SYN_MEM[R1]
+	R0 ^= pow(R1, 2, 32768)
+	R0 ^= 0x4154
+	SYN_MEM[R1] = R0
 
 # Jump past self-test
 SYN_PTR = 0x0377

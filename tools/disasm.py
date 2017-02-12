@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #    synacor.py - An implementation of the Synacor Challenge
-#    Copyright © 2016  RunasSudo
+#    Copyright © 2017  RunasSudo
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Affero General Public License as published by
@@ -30,9 +30,9 @@ class OpRegister:
 	def __init__(self, register):
 		self.register = register;
 	def get(self):
-		return 'R{}'.format(self.register + 1);
+		return 'R{}'.format(self.register);
 	def set(self):
-		return 'R{}'.format(self.register + 1);
+		return 'R{}'.format(self.register);
 
 def readWord():
 	byteData = data.read(2)

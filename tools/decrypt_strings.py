@@ -31,11 +31,11 @@ with open(sys.argv[1], 'rb') as data:
 		i += 1
 
 # Emulate 06bb
-for R2 in range(0x17b4, 0x7562):
-	R1 = SYN_MEM[R2]
-	R1 ^= pow(R2, 2, 32768)
-	R1 ^= 0x4154
-	SYN_MEM[R2] = R1
+for R1 in range(0x17b4, 0x7562):
+	R0 = SYN_MEM[R1]
+	R0 ^= pow(R1, 2, 32768)
+	R0 ^= 0x4154
+	SYN_MEM[R1] = R0
 
 class OpLiteral:
 	def __init__(self, value):
@@ -133,22 +133,22 @@ while SYN_PTR < len(SYN_MEM):
 		readOp()
 	elif word == 17: #CALL
 		if readWord() == 0x05b2:
-			if (SYN_MEM[SYN_PTR-9:SYN_PTR-6] == [1, 32769, 0x05fb] # set R2 05fb
-			and SYN_MEM[SYN_PTR-12:SYN_PTR-10] == [1, 32768] # set R1 XXXX
-			and SYN_MEM[SYN_PTR-6:SYN_PTR-4] == [9, 32770]): # add R3 XXXX XXXX
+			if (SYN_MEM[SYN_PTR-9:SYN_PTR-6] == [1, 32769, 0x05fb] # set R1 05fb
+			and SYN_MEM[SYN_PTR-12:SYN_PTR-10] == [1, 32768] # set R0 XXXX
+			and SYN_MEM[SYN_PTR-6:SYN_PTR-4] == [9, 32770]): # add R2 XXXX XXXX
 				# Got an encrypted string!
-				R1 = SYN_MEM[SYN_PTR-10]
-				R3 = (SYN_MEM[SYN_PTR-4] + SYN_MEM[SYN_PTR-3]) % 32768
-				#print('{:04x} {:04x}'.format(R1, R3))
+				R0 = SYN_MEM[SYN_PTR-10]
+				R2 = (SYN_MEM[SYN_PTR-4] + SYN_MEM[SYN_PTR-3]) % 32768
+				#print('{:04x} {:04x}'.format(R0, R2))
 				
-				strlen = SYN_MEM[R1]
+				strlen = SYN_MEM[R0]
 				strbuf = ''
 				for i in range(strlen):
-					encrypted = SYN_MEM[R1 + 1 + i]
-					decrypted = encrypted ^ R3
+					encrypted = SYN_MEM[R0 + 1 + i]
+					decrypted = encrypted ^ R2
 					strbuf += escapeChar(chr(decrypted))
 				
-				print('{:04x}: "{}"'.format(R1, strbuf))
+				print('{:04x}: "{}"'.format(R0, strbuf))
 	elif word == 18: #RET
 		pass
 	elif word == 19: #OUT
