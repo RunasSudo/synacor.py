@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 #    synacor.py - An implementation of the Synacor Challenge
 #    Copyright © 2017  RunasSudo
 #
@@ -15,13 +14,14 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from libsynacor import *
-
-import sys
-
-cpu = CPU()
-with open(sys.argv[1], 'rb') as data:
-	cpu.SYN_MEM = memory_from_file(data)
-
-while True:
-	cpu.step()
+def memory_from_file(data):
+	import struct
+	SYN_MEM = [0] * 32768
+	SYN_PTR = 0
+	while True:
+		byteData = data.read(2)
+		if len(byteData) < 2:
+			break
+		SYN_MEM[SYN_PTR] = struct.unpack('<H', byteData)[0]
+		SYN_PTR += 1
+	return SYN_MEM
