@@ -21,10 +21,60 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument('file', help='.bin file containing the initial memory dump')
+parser.add_argument('--hints', help='File(s) outlining additional jmp/call targets, label names, comments, etc', action='append')
 args = parser.parse_args()
 
 with open(args.file, 'rb') as data:
 	SYN_MEM = memory_from_file(data)
+
+# Find things to label
+labels, comments_before, comments_inline = {}, {}, {}
+SYN_PTR = 0
+while SYN_PTR < len(SYN_MEM):
+	word = SYN_MEM[SYN_PTR]
+	if word in instructions_by_opcode:
+		instruction, SYN_PTR = Instruction.next_instruction(SYN_MEM, SYN_PTR)
+		if isinstance(instruction, InstructionJmp) or isinstance(instruction, InstructionJt) or isinstance(instruction, InstructionJf):
+			if isinstance(instruction, InstructionJmp):
+				op = instruction.args[0]
+			else:
+				op = instruction.args[1]
+			if isinstance(op, OpLiteral):
+				loc = op.get(None)
+				labels['label_{:04x}'.format(loc)] = loc
+		elif isinstance(instruction, InstructionCall):
+			if isinstance(instruction.args[0], OpLiteral):
+				loc = instruction.args[0].get(None)
+				labels['sub_{:04x}'.format(loc)] = loc
+	else:
+		SYN_PTR += 1
+# Read hints
+if args.hints:
+	for hintfile in args.hints:
+		with open(hintfile, 'r') as data:
+			while True:
+				line = data.readline()
+				if line == '':
+					break
+				if line.startswith('jmp '):
+					loc = int(line.split()[1], 16)
+					labels['label_{:04x}'.format(loc)] = loc
+				elif line.startswith('call '):
+					loc = int(line.split()[1], 16)
+					labels['sub_{:04x}'.format(loc)] = loc
+				elif line.startswith('ren '):
+					old_label = line.split()[1]
+					new_label = line.split()[2]
+					labels[new_label] = labels[old_label]
+					del labels[old_label]
+				elif line.startswith('cmb '):
+					loc = int(line.split()[1], 16)
+					comment = line[line.index(' ', line.index(' ') + 1) + 1:].strip()
+					if loc not in comments_before:
+						comments_before[loc] = []
+					comments_before[loc].append(comment)
+				else:
+					raise Exception('Invalid line in hint file: {}'.format(line))
 
 def escape_char(char):
 	return char.encode('unicode_escape').decode('utf-8').replace('"', '\\"')
@@ -35,6 +85,30 @@ MODE_DAT = False #False, 1 (data), 2 (text)
 SYN_PTR = 0
 
 while SYN_PTR < len(SYN_MEM):
+	if SYN_PTR in comments_before:
+		if MODE_OUT:
+			print('"')
+			MODE_OUT = False
+		if MODE_DAT == 1:
+			print()
+			MODE_DAT = False
+		if MODE_DAT == 2:
+			print('"')
+			MODE_DAT = False
+		for comment in comments_before[SYN_PTR]:
+			print('; {}'.format(comment))
+	if any(v == SYN_PTR for k, v in labels.items()):
+		if MODE_OUT:
+			print('"')
+			MODE_OUT = False
+		if MODE_DAT == 1:
+			print()
+			MODE_DAT = False
+		if MODE_DAT == 2:
+			print('"')
+			MODE_DAT = False
+		print('${}:'.format(next(k for k, v in labels.items() if v == SYN_PTR)))
+	
 	word = SYN_MEM[SYN_PTR]
 	
 	if MODE_OUT and word != 19:
@@ -72,7 +146,7 @@ while SYN_PTR < len(SYN_MEM):
 		SYN_PTR += 1
 	else:
 		# Instruction
-		instruction, SYN_PTR = Instruction.next_instruction(SYN_MEM, SYN_PTR)
+		instruction, next_SYN_PTR = Instruction.next_instruction(SYN_MEM, SYN_PTR)
 		# Special cases
 		if isinstance(instruction, InstructionOut):
 			if isinstance(instruction.args[0], OpLiteral):
@@ -89,5 +163,20 @@ while SYN_PTR < len(SYN_MEM):
 					print('"')
 					MODE_OUT = False
 				print('{:04x}: {}'.format(SYN_PTR, instruction.describe()))
+		elif isinstance(instruction, InstructionJmp) or isinstance(instruction, InstructionJt) or isinstance(instruction, InstructionJf) or isinstance(instruction, InstructionCall):
+			if isinstance(instruction, InstructionJmp) or isinstance(instruction, InstructionCall):
+				op = instruction.args[0]
+			else:
+				op = instruction.args[1]
+			if isinstance(op, OpLiteral):
+				loc = op.get(None)
+				if any(v == loc for k, v in labels.items()):
+					label = next(k for k, v in labels.items() if v == loc)
+					print('{:04x}: {: <4} ${}'.format(SYN_PTR, instruction.name, label))
+				else:
+					print('{:04x}: {}'.format(SYN_PTR, instruction.describe()))
+			else:
+				print('{:04x}: {}'.format(SYN_PTR, instruction.describe()))
 		else:
 			print('{:04x}: {}'.format(SYN_PTR, instruction.describe()))
+		SYN_PTR = next_SYN_PTR

@@ -1,0 +1,6 @@
+jmp 0000
+ren label_0000 start
+jmp 0110
+ren label_0110 self_test
+cmb 0140 Test jmp
+ren label_015b self_test_jmp1
