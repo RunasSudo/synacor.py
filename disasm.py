@@ -172,7 +172,10 @@ while SYN_PTR < len(SYN_MEM):
 				loc = op.get(None)
 				if any(v == loc for k, v in labels.items()):
 					label = next(k for k, v in labels.items() if v == loc)
-					print('{:04x}: {: <4} ${}'.format(SYN_PTR, instruction.name, label))
+					if isinstance(instruction, InstructionJmp) or isinstance(instruction, InstructionCall):
+						print('{:04x}: {: <4} ${}'.format(SYN_PTR, instruction.name, label))
+					else:
+						print('{:04x}: {: <4} {} ${}'.format(SYN_PTR, instruction.name, instruction.args[0].describe(), label))
 				else:
 					print('{:04x}: {}'.format(SYN_PTR, instruction.describe()))
 			else:

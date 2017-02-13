@@ -122,13 +122,35 @@ def assemble_instruction(source, tokens):
 				if argstr.startswith('R'):
 					# Register
 					arg = OpRegister(int(argstr[1:]))
+				elif argstr.startswith('$'):
+					# Label
+					arg = OpLabel(argstr[1:])
 				else:
 					# Hex literal
 					arg = OpLiteral(int(argstr, 16))
 				instruction.args.append(arg)
 			return [instruction], []
 
-# TODO: First pass
+# First pass
+labels = {}
+SYN_MEM = [0] * 32768
+SYN_PTR = 0
+
+with open(args.file, 'r') as source:
+	try:
+		while True:
+			instructions, inst_labels = assemble_next_instruction(source)
+			for label in inst_labels:
+				if label.startswith('$'):
+					labels[label[1:]] = SYN_PTR
+			if instructions is None:
+				break
+			for instruction in instructions:
+				code = instruction.assemble(None)
+				SYN_MEM[SYN_PTR:SYN_PTR+len(code)] = code
+				SYN_PTR += len(code)
+	except Exception as ex:
+		raise Exception('Error at line {}'.format(line_no)) from ex
 
 # Second pass
 SYN_MEM = [0] * 32768
@@ -137,11 +159,11 @@ SYN_PTR = 0
 with open(args.file, 'r') as source:
 	try:
 		while True:
-			instructions, labels = assemble_next_instruction(source)
+			instructions, inst_labels = assemble_next_instruction(source)
 			if instructions is None:
 				break
 			for instruction in instructions:
-				code = instruction.assemble()
+				code = instruction.assemble(labels)
 				SYN_MEM[SYN_PTR:SYN_PTR+len(code)] = code
 				SYN_PTR += len(code)
 	except Exception as ex:

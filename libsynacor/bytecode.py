@@ -33,7 +33,7 @@ class OpLiteral(Operand):
 	
 	def describe(self):
 		return '{:04x}'.format(self.value)
-	def assemble(self):
+	def assemble(self, labels):
 		return self.value
 
 class OpRegister(Operand):
@@ -46,8 +46,21 @@ class OpRegister(Operand):
 	
 	def describe(self):
 		return 'R{}'.format(self.register)
-	def assemble(self):
+	def assemble(self, labels):
 		return self.register + 32768
+
+# Used only in assembling process
+class OpLabel(Operand):
+	def __init__(self, label):
+		self.label = label
+	
+	def assemble(self, labels):
+		if labels is None:
+			# First pass
+			return 0xffff
+		if self.label not in labels:
+			raise Exception('Unknown label {}'.format(self.label))
+		return OpLiteral(labels[self.label]).assemble(labels)
 
 instructions_by_opcode = {}
 instructions_by_name = {}
@@ -74,8 +87,8 @@ class Instruction:
 			description += ' {}'.format(self.args[i].describe())
 		return description
 	
-	def assemble(self):
-		return [self.opcode] + [self.args[i].assemble() for i in range(self.nargs)]
+	def assemble(self, labels):
+		return [self.opcode] + [self.args[i].assemble(labels) for i in range(self.nargs)]
 	
 	@staticmethod
 	def next_instruction(data, idx):
@@ -228,6 +241,6 @@ class InstructionIn(Instruction):
 # Not actually an instruction, but convenient to think of it as one for the purposes of assembling
 # self.args is an array of literal values, rather than Operands
 class InstructionData(Instruction):
-	def assemble(self):
+	def assemble(self, labels):
 		return self.args
 instructions_by_name['data'] = InstructionData
