@@ -33,6 +33,8 @@ class OpLiteral(Operand):
 	
 	def describe(self):
 		return '{:04x}'.format(self.value)
+	def assemble(self):
+		return self.value
 
 class OpRegister(Operand):
 	def __init__(self, register):
@@ -44,6 +46,8 @@ class OpRegister(Operand):
 	
 	def describe(self):
 		return 'R{}'.format(self.register)
+	def assemble(self):
+		return self.register + 32768
 
 instructions_by_opcode = {}
 instructions_by_name = {}
@@ -69,6 +73,9 @@ class Instruction:
 		for i in range(self.nargs):
 			description += ' {}'.format(self.args[i].describe())
 		return description
+	
+	def assemble(self):
+		return [self.opcode] + [self.args[i].assemble() for i in range(self.nargs)]
 	
 	@staticmethod
 	def next_instruction(data, idx):
@@ -217,3 +224,10 @@ class InstructionIn(Instruction):
 				cpu.SYN_STDIN_BUF = list(line)
 		
 		self.args[0].set(cpu, ord(cpu.SYN_STDIN_BUF.pop(0)))
+
+# Not actually an instruction, but convenient to think of it as one for the purposes of assembling
+# self.args is an array of literal values, rather than Operands
+class InstructionData(Instruction):
+	def assemble(self):
+		return self.args
+instructions_by_name['data'] = InstructionData

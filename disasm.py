@@ -17,13 +17,17 @@
 
 from libsynacor import *
 
-import sys
+import argparse
 
-with open(sys.argv[1], 'rb') as data:
+parser = argparse.ArgumentParser()
+parser.add_argument('file', help='.bin file containing the initial memory dump')
+args = parser.parse_args()
+
+with open(args.file, 'rb') as data:
 	SYN_MEM = memory_from_file(data)
 
 def escape_char(char):
-	return char.replace('\\', '\\\\').replace('\n', '\\n').replace('"', '\\"')
+	return char.encode('unicode_escape').decode('utf-8').replace('"', '\\"')
 
 MODE_OUT = False
 MODE_DAT = False #False, 1 (data), 2 (text)
