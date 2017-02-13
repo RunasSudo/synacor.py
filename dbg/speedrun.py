@@ -68,7 +68,7 @@ use corroded coin
 north
 take teleporter
 use teleporter
-.dbg_teleporter
+.dbg/teleporter
 use teleporter
 north
 north
