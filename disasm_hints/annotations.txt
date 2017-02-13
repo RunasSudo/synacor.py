@@ -56,16 +56,11 @@ ren sub_0505 self_test_call_subroutine1
 lbl 02c2 self_test_call_returnloc1
 ren label_0509 self_test_call_fail
 ren label_02c4 self_test_call_check_stack1
-rep 02c6 eq   R1 R0 $self_test_call_check_stack1
 cmi 02c6 This test is strange. If R0 == 02c2 as tested below, R0 != 02c4 is guaranteed
-rep 02cd eq   R1 R0 $self_test_call_returnloc1
 cmb 02d4 Test call register value
 ren sub_0507 self_test_call_subroutine2
 lbl 02d9 self_test_call_returnloc2
-rep 02d4 set  R0 $self_test_call_subroutine2
 ren label_02db self_test_call_check_stack2
-rep 02dd eq   R1 R0 $self_test_call_check_stack2
-rep 02e4 eq   R1 R0 $self_test_call_returnloc2
 cmb 02eb Test add overflow
 ren label_0520 self_test_overflow_fail
 cmi 0304 Just to be safe!
@@ -80,15 +75,48 @@ lbl 034b self_test_rwmem_data
 cmb 034b Test rmem/wmem
 ren label_04d7 self_test_rmem_fail
 ren label_04ee self_test_wmem_fail
-rep 034d rmem R0 $self_test_rwmem_data
-rep 0357 add  R2 $self_test_rwmem_data 0001
-rep 0365 set  R0 $self_test_rwmem_data
 ren sub_06bb decrypt_data
-cmi 0375 Sneaky!
+cmb 0375 Sneaky!
+cmb 0375 call $decrypt_data
+rep 0375 nop
+rep 0376 nop
 lbl 17b4 encrypted_data
-rep 0377 rmem R0 $encrypted_data
-rep 0381 add  R2 $encrypted_data 0001
 ren label_03ad self_test_wmem_cmd_fail
 rep 03ab out $self_test_complete
 cmi 03a9 Becomes noop; jt 0013 $self_test_complete
 lbl 03d2 self_test_complete
+lbl 17c0 str_self_test_result
+cmi 03d6 The "F"
+lbl 17e4 str_complete
+ren label_03e8 self_test_loop_copy_complete
+cmb 03e8 Copy the "complete" string over the "FAILED!!" substring of $str_self_test_result
+ren label_03ff self_test_concat_all_pass
+cmb 03ff Extend $str_self_test_result to include $str_self_test_all_pass
+lbl 17d3 str_self_test_all_pass
+cmi 0410 ASCII comma
+cmi 0428 Print self-test completion string
+cmi 0430 Jump to game loop
+ren label_0aae after_self_test
+ren sub_05b2 loop_string
+cmb 05b2 % Loops over a string and calls a callback for each character
+cmb 05b2 % @param R0 Pointer to the string to loop over
+cmb 05b2 % @param R1 Pointer to the callback to call with the character in R0
+ren label_05c8 loop_string_loop_chars
+ren label_05e3 loop_string_loop_chars_done
+ren sub_05ee print_string
+cmb 05ee % Prints a string to output
+cmb 05ee % @param R0 Pointer to the string to print
+ren sub_05f8 print_char
+cmb 05f8 % Prints a single character to output
+cmb 05f8 % Most useful as a callback to $loop_string
+cmb 05f8 % @param R0 The character to print
+ren sub_05fb print_char_xored
+cmb 05fb % Prints a single character to output after XORing with a fixed value
+cmb 05fb % Most useful as a callback to $loop_string
+cmb 05fb % @param R0 The input character
+cmb 05fb % @param R2 The other XOR operand
+ren sub_084d xor
+cmb 084d % Calculates the exclusive OR (XOR) of two values
+cmb 084d % @param R0 The first XOR operand
+cmb 084d % @param R1 The second XOR operand
+cmb 084d % @return R0 The value R0 XOR R1

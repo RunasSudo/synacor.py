@@ -22,15 +22,29 @@ import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('file', help='.bin file containing the initial memory dump')
 parser.add_argument('--hints', help='File(s) outlining additional jmp/call targets, label names, comments, etc', action='append')
+parser.add_argument('--smart', help='Given a raw Synacor challenge file, disassemble in a Synacor-aware manner', action='store_true')
+parser.add_argument('--aggressive-labels', help='Replace values with corresponding labels irrespective of where they appear', action='store_true')
 args = parser.parse_args()
 
 with open(args.file, 'rb') as data:
 	SYN_MEM = memory_from_file(data)
+	disassemble_end = len(SYN_MEM)
+
+labels, comments_before, comments_inline, replacements = {}, {}, {}, {}
+
+# Do smart things if requested
+if args.smart:
+	disassemble_end = 0x17b4
+	# Emulate 06bb to decrypt data
+	for R1 in range(disassemble_end, 0x7562):
+		R0 = SYN_MEM[R1]
+		R0 ^= pow(R1, 2, 32768)
+		R0 ^= 0x4154
+		SYN_MEM[R1] = R0
 
 # Find things to label
-labels, comments_before, comments_inline, replacements = {}, {}, {}, {}
 SYN_PTR = 0
-while SYN_PTR < len(SYN_MEM):
+while SYN_PTR < disassemble_end:
 	word = SYN_MEM[SYN_PTR]
 	if word in instructions_by_opcode:
 		instruction, SYN_PTR = Instruction.next_instruction(SYN_MEM, SYN_PTR)
@@ -93,18 +107,48 @@ MODE_DAT = False #False, 1 (data), 2 (text)
 
 SYN_PTR = 0
 
+def set_mode_out(mode):
+	global MODE_OUT
+	if MODE_OUT == mode:
+		pass
+	elif mode == False:
+		# Switching off
+		print('"')
+	else:
+		# Switching on
+		print('{:04x}: out  "'.format(SYN_PTR), end='')
+	MODE_OUT = mode
+def set_mode_dat(mode):
+	global MODE_DAT
+	if MODE_DAT == mode:
+		pass
+	elif mode == False:
+		# Switching off
+		if MODE_DAT == 2:
+			print('"', end='')
+		print()
+	elif MODE_DAT == 1:
+		# Switching from data to text
+		print()
+		print('{:04x}: data "'.format(SYN_PTR), end='')
+	elif MODE_DAT == 2:
+		# Switching from text to data
+		print('"')
+		print('{:04x}: data'.format(SYN_PTR), end='')
+	else:
+		# Switching to a new mode
+		print('{:04x}: data'.format(SYN_PTR), end='')
+		if mode == 2:
+			print('"', end='')
+	MODE_DAT = mode
+def clear_modes():
+	set_mode_out(False)
+	set_mode_dat(False)
+
 while SYN_PTR < len(SYN_MEM):
 	# Handle comments
 	if SYN_PTR in comments_before:
-		if MODE_OUT:
-			print('"')
-			MODE_OUT = False
-		if MODE_DAT == 1:
-			print()
-			MODE_DAT = False
-		if MODE_DAT == 2:
-			print('"')
-			MODE_DAT = False
+		clear_modes()
 		for comment in comments_before[SYN_PTR]:
 			print('; {}'.format(comment))
 	if SYN_PTR in comments_inline:
@@ -114,15 +158,7 @@ while SYN_PTR < len(SYN_MEM):
 	
 	# Handle labels
 	if any(v == SYN_PTR for k, v in labels.items()):
-		if MODE_OUT:
-			print('"')
-			MODE_OUT = False
-		if MODE_DAT == 1:
-			print()
-			MODE_DAT = False
-		if MODE_DAT == 2:
-			print('"')
-			MODE_DAT = False
+		clear_modes()
 		print('${}:'.format(next(k for k, v in labels.items() if v == SYN_PTR)))
 	
 	# Handle replacements
@@ -134,38 +170,17 @@ while SYN_PTR < len(SYN_MEM):
 	
 	word = SYN_MEM[SYN_PTR]
 	
-	if MODE_OUT and word != 19:
-		print('"')
-		MODE_OUT = False
-	if MODE_DAT and 0 <= word <= 21:
-		if MODE_DAT == 1:
-			print()
-		if MODE_DAT == 2:
-			print('"')
-		MODE_DAT = False
-	
-	if word not in instructions_by_opcode:
+	if SYN_PTR >= disassemble_end or word not in instructions_by_opcode:
 		# Data
 		if 32 <= word <= 126:
-			# looks like letters - unfortunately "\n" looks like MULT
-			if MODE_DAT == 2:
-				print(escape_char(chr(word)), end='')
-			else:
-				if MODE_DAT == 1:
-					print()
-				print('{:04x}: data "{}'.format(SYN_PTR, escape_char(chr(word))), end='')
-				MODE_DAT = 2
+			# Looks like letters - unfortunately "\n" looks like MULT
+			set_mode_dat(2)
+			print(escape_char(chr(word)), end='')
 			if word == 0x0a:
-				print('"')
-				MODE_DAT = False # break on newlines
+				clear_modes() # Break on newlines
 		else:
-			if MODE_DAT == 1:
-				print(' {:04x}'.format(word), end='')
-			else:
-				if MODE_DAT == 2:
-					print('"')
-				print('{:04x}: data {:04x}'.format(SYN_PTR, word), end='')
-				MODE_DAT = 1
+			set_mode_dat(1)
+			print(' {:04x}'.format(word), end='')
 		SYN_PTR += 1
 	else:
 		# Instruction
@@ -173,30 +188,36 @@ while SYN_PTR < len(SYN_MEM):
 		# Special cases
 		if isinstance(instruction, InstructionOut):
 			if isinstance(instruction.args[0], OpLiteral):
-				if MODE_OUT:
-					print(escape_char(chr(instruction.args[0].get(None))), end='')
-				else:
-					print('{:04x}: out  "{}'.format(SYN_PTR, escape_char(chr(instruction.args[0].get(None)))), end='')
-					MODE_OUT = True
+				set_mode_out(True)
+				print(escape_char(chr(instruction.args[0].get(None))), end='')
 				if instruction.args[0].get(None) == 0x0a:
-					print('"')
-					MODE_OUT = False # break on newlines
+					clear_modes() # Break on newlines
 			else:
-				if MODE_OUT:
-					print('"')
-					MODE_OUT = False
+				clear_modes()
 				print('{:04x}: {}{}'.format(SYN_PTR, instruction.describe(), comment_inline))
 		elif isinstance(instruction, InstructionJmp) or isinstance(instruction, InstructionJt) or isinstance(instruction, InstructionJf) or isinstance(instruction, InstructionCall):
+			clear_modes()
 			if isinstance(instruction, InstructionJmp) or isinstance(instruction, InstructionCall):
 				argidx = 0
 			else:
 				argidx = 1
-			if isinstance(instruction.args[argidx], OpLiteral):
-				loc = instruction.args[argidx].get(None)
-				if any(v == loc for k, v in labels.items()):
-					label = next(k for k, v in labels.items() if v == loc)
-					instruction.args[argidx] = OpLabel(label)
+			# Aggressively replace labels if requested
+			for argnum in range(instruction.nargs) if args.aggressive_labels else [argidx]:
+				if isinstance(instruction.args[argnum], OpLiteral):
+					loc = instruction.args[argnum].get(None)
+					if any(v == loc for k, v in labels.items()):
+						label = next(k for k, v in labels.items() if v == loc)
+						instruction.args[argnum] = OpLabel(label)
 			print('{:04x}: {}{}'.format(SYN_PTR, instruction.describe(), comment_inline))
 		else:
+			# Aggressively replace labels if requested
+			if args.aggressive_labels:
+				for argnum in range(instruction.nargs):
+					if isinstance(instruction.args[argnum], OpLiteral):
+						loc = instruction.args[argnum].get(None)
+						if any(v == loc for k, v in labels.items()):
+							label = next(k for k, v in labels.items() if v == loc)
+							instruction.args[argnum] = OpLabel(label)
+			clear_modes()
 			print('{:04x}: {}{}'.format(SYN_PTR, instruction.describe(), comment_inline))
 		SYN_PTR = next_SYN_PTR
