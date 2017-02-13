@@ -49,11 +49,13 @@ class OpRegister(Operand):
 	def assemble(self, labels):
 		return self.register + 32768
 
-# Used only in assembling process
+# Used only in dis/assembling process
 class OpLabel(Operand):
 	def __init__(self, label):
 		self.label = label
 	
+	def describe(self):
+		return '${}'.format(self.label)
 	def assemble(self, labels):
 		if labels is None:
 			# First pass
@@ -85,7 +87,7 @@ class Instruction:
 		description = '{: <4}'.format(self.name)
 		for i in range(self.nargs):
 			description += ' {}'.format(self.args[i].describe())
-		return description
+		return description.strip()
 	
 	def assemble(self, labels):
 		return [self.opcode] + [self.args[i].assemble(labels) for i in range(self.nargs)]

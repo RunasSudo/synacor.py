@@ -28,7 +28,7 @@ with open(args.file, 'rb') as data:
 	SYN_MEM = memory_from_file(data)
 
 # Find things to label
-labels, comments_before, comments_inline = {}, {}, {}
+labels, comments_before, comments_inline, replacements = {}, {}, {}, {}
 SYN_PTR = 0
 while SYN_PTR < len(SYN_MEM):
 	word = SYN_MEM[SYN_PTR]
@@ -62,6 +62,9 @@ if args.hints:
 				elif line.startswith('call '):
 					loc = int(line.split()[1], 16)
 					labels['sub_{:04x}'.format(loc)] = loc
+				elif line.startswith('lbl '):
+					loc = int(line.split()[1], 16)
+					labels[line.split()[2]] = loc
 				elif line.startswith('ren '):
 					old_label = line.split()[1]
 					new_label = line.split()[2]
@@ -73,11 +76,17 @@ if args.hints:
 					if loc not in comments_before:
 						comments_before[loc] = []
 					comments_before[loc].append(comment)
+				elif line.startswith('cmi '):
+					loc = int(line.split()[1], 16)
+					comment = line[line.index(' ', line.index(' ') + 1) + 1:].strip()
+					comments_inline[loc] = comment
+				elif line.startswith('rep '):
+					loc = int(line.split()[1], 16)
+					code = line[line.index(' ', line.index(' ') + 1) + 1:].strip()
+					instruction = assemble_line(None, code)[0][0]
+					replacements[loc] = instruction
 				else:
 					raise Exception('Invalid line in hint file: {}'.format(line))
-
-def escape_char(char):
-	return char.encode('unicode_escape').decode('utf-8').replace('"', '\\"')
 
 MODE_OUT = False
 MODE_DAT = False #False, 1 (data), 2 (text)
@@ -85,6 +94,7 @@ MODE_DAT = False #False, 1 (data), 2 (text)
 SYN_PTR = 0
 
 while SYN_PTR < len(SYN_MEM):
+	# Handle comments
 	if SYN_PTR in comments_before:
 		if MODE_OUT:
 			print('"')
@@ -97,6 +107,12 @@ while SYN_PTR < len(SYN_MEM):
 			MODE_DAT = False
 		for comment in comments_before[SYN_PTR]:
 			print('; {}'.format(comment))
+	if SYN_PTR in comments_inline:
+		comment_inline = ' ; {}'.format(comments_inline[SYN_PTR])
+	else:
+		comment_inline = ''
+	
+	# Handle labels
 	if any(v == SYN_PTR for k, v in labels.items()):
 		if MODE_OUT:
 			print('"')
@@ -108,6 +124,13 @@ while SYN_PTR < len(SYN_MEM):
 			print('"')
 			MODE_DAT = False
 		print('${}:'.format(next(k for k, v in labels.items() if v == SYN_PTR)))
+	
+	# Handle replacements
+	if SYN_PTR in replacements:
+		instruction = replacements[SYN_PTR]
+		print('{:04x}: {}{}'.format(SYN_PTR, instruction.describe(), comment_inline))
+		SYN_PTR += len(instruction.assemble(None))
+		continue
 	
 	word = SYN_MEM[SYN_PTR]
 	
@@ -162,24 +185,18 @@ while SYN_PTR < len(SYN_MEM):
 				if MODE_OUT:
 					print('"')
 					MODE_OUT = False
-				print('{:04x}: {}'.format(SYN_PTR, instruction.describe()))
+				print('{:04x}: {}{}'.format(SYN_PTR, instruction.describe(), comment_inline))
 		elif isinstance(instruction, InstructionJmp) or isinstance(instruction, InstructionJt) or isinstance(instruction, InstructionJf) or isinstance(instruction, InstructionCall):
 			if isinstance(instruction, InstructionJmp) or isinstance(instruction, InstructionCall):
-				op = instruction.args[0]
+				argidx = 0
 			else:
-				op = instruction.args[1]
-			if isinstance(op, OpLiteral):
-				loc = op.get(None)
+				argidx = 1
+			if isinstance(instruction.args[argidx], OpLiteral):
+				loc = instruction.args[argidx].get(None)
 				if any(v == loc for k, v in labels.items()):
 					label = next(k for k, v in labels.items() if v == loc)
-					if isinstance(instruction, InstructionJmp) or isinstance(instruction, InstructionCall):
-						print('{:04x}: {: <4} ${}'.format(SYN_PTR, instruction.name, label))
-					else:
-						print('{:04x}: {: <4} {} ${}'.format(SYN_PTR, instruction.name, instruction.args[0].describe(), label))
-				else:
-					print('{:04x}: {}'.format(SYN_PTR, instruction.describe()))
-			else:
-				print('{:04x}: {}'.format(SYN_PTR, instruction.describe()))
+					instruction.args[argidx] = OpLabel(label)
+			print('{:04x}: {}{}'.format(SYN_PTR, instruction.describe(), comment_inline))
 		else:
-			print('{:04x}: {}'.format(SYN_PTR, instruction.describe()))
+			print('{:04x}: {}{}'.format(SYN_PTR, instruction.describe(), comment_inline))
 		SYN_PTR = next_SYN_PTR

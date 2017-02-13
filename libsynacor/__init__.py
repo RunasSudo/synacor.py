@@ -16,4 +16,5 @@
 
 from .binfile import *
 from .bytecode import *
+from .assembly import *
 from .cpu import *
