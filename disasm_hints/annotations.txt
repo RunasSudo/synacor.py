@@ -1,0 +1,122 @@
+cmb 0140 Test jmp
+ren label_015b self_test_jmp1
+cmi 0142 jmp lands here if fails
+cmi 0162 jmp from 0160 lands here if -2
+cmi 0164 jmp from 0160 lands here if -1
+cmi 0166 jmp from 0160 lands here if correct
+cmi 0168 jmp from 0160 lands here if +1
+cmi 016a jmp from 0160 lands here if +2
+ren label_0166 self_test_jmp2
+ren label_0170 self_test_jmp_diagnose-2
+ren label_018d self_test_jmp_diagnose-1
+ren label_01a8 self_test_jmp_diagnose+1
+ren label_01c5 self_test_jmp_diagnose+2
+cmi 016e jmp from 0162 lands here
+cmi 018c jmp from 0164 lands here
+cmi 01a9 jmp from 0168 lands here
+cmi 01c7 jmp from 016a lands here
+cmb 01e4 Test jt/jf
+cmb 01e4 ?? Does not test behaviour for values other than 0 and 1
+ren label_01e4 self_test_jtjf
+ren label_0432 self_test_jtjf_fail
+cmi 01e4 Jump to fail if 0 is true
+cmi 01e7 Jump to fail if 1 is false
+ren label_01ef self_test_jtjf2
+ren label_01f4 self_test_regzero
+cmi 01ed Fail if 1 is not true
+cmi 01f2 Fail if 0 is not false
+cmb 01f4 Test that all registers are zero
+cmb 01f4 ?? Because this uses jt/jf, errors may not be detected if involving values other than 0 and 1
+ren label_0445 self_test_regzero_fail
+cmb 020c Test set
+ren label_045e self_test_set_fail
+cmb 0218 Test add
+cmb 0218 ?? This only tests if 1 + 1 != 0, and will fail to detect almost all other errors
+cmi 021c Dodgy!
+ren label_0234 self_test_add
+cmb 0234 Test add
+cmb 0234 ?? This reuses the result from the add test, so will erroneously report an eq failure (instead of an add failure) if 1 + 1 != 2
+cmb 0234 It would probably have been a better idea to test eq first, then use that to verify add
+cmi 0238 Dodgy!
+ren label_024e self_test_pushpop
+cmb 024e Test push/pop by exchanging R0 and R1
+cmb 024e ?? Because R1 is reused, the test will erroneously report a push/pop failure (instead of an eq failure) if eq returns any other truthy value in the previous test
+cmi 025d Dodgy!
+ren label_0486 self_test_pushpop_fail
+cmb 0264 Test gt
+ren label_0473 self_test_gt_fail
+cmb 0279 Test and
+ren label_0499 self_test_and_fail
+cmb 0284 Test or
+cmb 02ac Test not
+ren label_02ac self_test_not
+ren label_04b8 self_test_not_fail
+cmb 02c0 Test call
+ren sub_0505 self_test_call_subroutine1
+lbl 02c2 self_test_call_returnloc1
+ren label_0509 self_test_call_fail
+ren label_02c4 self_test_call_check_stack1
+cmi 02c6 This test is strange. If R0 == 02c2 as tested below, R0 != 02c4 is guaranteed
+cmb 02d4 Test call register value
+ren sub_0507 self_test_call_subroutine2
+lbl 02d9 self_test_call_returnloc2
+ren label_02db self_test_call_check_stack2
+cmb 02eb Test add overflow
+ren label_0520 self_test_overflow_fail
+cmi 0304 Just to be safe!
+cmb 030b Test mult
+cmi 030f Test for HHGTTG (non-)compatibility
+ren label_0565 self_test_hhgttg_fail
+ren label_0586 self_test_mult_fail
+cmb 0328 Test mod
+ren label_059d self_test_mod_fail
+ren label_034d self_test_rwmem
+lbl 034b self_test_rwmem_data
+cmb 034b Test rmem/wmem
+ren label_04d7 self_test_rmem_fail
+ren label_04ee self_test_wmem_fail
+ren sub_06bb decrypt_data
+cmb 0375 Sneaky!
+cmb 0375 call $decrypt_data
+rep 0375 nop
+rep 0376 nop
+lbl 17b4 encrypted_data
+ren label_03ad self_test_wmem_cmd_fail
+rep 03ab out $self_test_complete
+cmi 03a9 Becomes noop; jt 0013 $self_test_complete
+lbl 03d2 self_test_complete
+lbl 17c0 str_self_test_result
+cmi 03d6 The "F"
+lbl 17e4 str_complete
+ren label_03e8 self_test_loop_copy_complete
+cmb 03e8 Copy the "complete" string over the "FAILED!!" substring of $str_self_test_result
+ren label_03ff self_test_concat_all_pass
+cmb 03ff Extend $str_self_test_result to include $str_self_test_all_pass
+lbl 17d3 str_self_test_all_pass
+cmi 0410 ASCII comma
+cmi 0428 Print self-test completion string
+cmi 0430 Jump to game loop
+ren label_0aae after_self_test
+ren sub_05b2 loop_string
+cmb 05b2 % Loops over a string and calls a callback for each character
+cmb 05b2 % @param R0 Pointer to the string to loop over
+cmb 05b2 % @param R1 Pointer to the callback to call with the character in R0
+ren label_05c8 loop_string_loop_chars
+ren label_05e3 loop_string_loop_chars_done
+ren sub_05ee print_string
+cmb 05ee % Prints a string to output
+cmb 05ee % @param R0 Pointer to the string to print
+ren sub_05f8 print_char
+cmb 05f8 % Prints a single character to output
+cmb 05f8 % Most useful as a callback to $loop_string
+cmb 05f8 % @param R0 The character to print
+ren sub_05fb print_char_xored
+cmb 05fb % Prints a single character to output after XORing with a fixed value
+cmb 05fb % Most useful as a callback to $loop_string
+cmb 05fb % @param R0 The input character
+cmb 05fb % @param R2 The other XOR operand
+ren sub_084d xor
+cmb 084d % Calculates the exclusive OR (XOR) of two values
+cmb 084d % @param R0 The first XOR operand
+cmb 084d % @param R1 The second XOR operand
+cmb 084d % @return R0 The value R0 XOR R1

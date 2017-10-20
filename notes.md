@@ -5,8 +5,6 @@ Note 1: Codes seem to be unique for every user.
 
 Note 2: Numeric values in `monospace` font are in hexadecimal.
 
-Note 3: For some reason, I decided to number the registers `R1` through `R8`, contrary to the spec…
-
 ## The programming codes
 
 ### Code 1
@@ -90,7 +88,7 @@ Proceed to the `north` door and `use` the `teleporter` to obtain the code:
 ## The true-believers-only codes
 At this point, you will almost certainly need to delve into the code of the challenge, if you haven't already. The code in `challenge.bin` past the self-test is encrypted, so disassembling and analysing the code is most easily done based off a memory dump from a running copy:
 
-    .dbg_dump dumps/init (From inside the game)
+    .dbg/dump dumps/init (From inside the game)
     ./tools/dump_to_raw.py dumps/init dumps/init.raw
     ./tools/disasm.py dumps/init.raw > dumps/init.asm
 
@@ -166,7 +164,7 @@ Now, let's see what this `1545` does. C-style, because assembly makes my brain s
 
 ```c
 int 1545() {
-	if (R8 == 0)
+	if (R7 == 0)
 		return 15e5(); // Ground state teleport
 	05b2(70ac, 05fb, 1807 + 585a); // Secure text print
 	for(i = 0; i < 5; i++); // Speed up loop, because why not?
@@ -176,7 +174,7 @@ int 1545() {
 	
 	05b2(7156, 05fb, 1ed6 + 0992);
 	
-	0731(R8, 650a, 7fff, 7239);
+	0731(R7, 650a, 7fff, 7239);
 	
 	05b2(723d, 05fb, 7c1f + 0146);
 	
@@ -188,53 +186,53 @@ int 1545() {
 	return 1652();
 }
 
-int 178b(R1, R2) {
+int 178b(R0, R1) {
+	if (R0 != 0) {
+		return 1793(R0, R1);
+	}
+	return R1 + 0001;
+}
+
+int 1793(R0, R1) {
 	if (R1 != 0) {
-		return 1793(R1, R2);
+		return 17a0(R0, R1);
 	}
-	return R2 + 0001;
+	R0 = R0 + 7fff;
+	R1 = R7;
+	R0 = 178b(R0, R1);
+	return R0;
 }
 
-int 1793(R1, R2) {
-	if (R2 != 0) {
-		return 17a0(R1, R2);
-	}
+int 17a0(R0, R1) {
 	R1 = R1 + 7fff;
-	R2 = R8;
-	R1 = 178b(R1, R2);
-	return R1;
-}
-
-int 17a0(R1, R2) {
-	R2 = R2 + 7fff;
-	R2 = 178b(R1, R2);
-	R1 = R1 + 7fff;
-	R1 = 178b(R1, R2);
-	return R1;
+	R1 = 178b(R0, R1);
+	R0 = R0 + 7fff;
+	R0 = 178b(R0, R1);
+	return R0;
 }
 ```
 
-Phew, so in other words, we seek an `R8` such that `178b(4, 1, R8)` equals 6. Let's see if we can't rewrite that function. Note that adding 0x7fff = 32767 to a number modulo 32768 is equivalent to subtracting 1. Thinking through the code, then,
+Phew, so in other words, we seek an `R7` such that `178b(4, 1, R7)` equals 6. Let's see if we can't rewrite that function. Note that adding 0x7fff = 32767 to a number modulo 32768 is equivalent to subtracting 1. Thinking through the code, then,
 
-    A(R1, R2) = R2 + 1                   , if R1 = 0
-                A(R1 - 1, R8)            , if R1 ≠ 0 and R2 = 0
-                A(R1 - 1, A(R1, R2 - 1)) , if R1 ≠ 0 and R2 ≠ 0
+    A(R0, R1) = R1 + 1                   , if R0 = 0
+                A(R0 - 1, R7)            , if R0 ≠ 0 and R1 = 0
+                A(R0 - 1, A(R0, R1 - 1)) , if R0 ≠ 0 and R1 ≠ 0
 
-Recognise anything? Well, neither did I the first time, and I'd [already seen the video](https://www.youtube.com/watch?v=i7sm9dzFtEI). It's the [Ackermann function](https://en.wikipedia.org/wiki/Ackermann_function)! With the slight twist that instead of the second line being `A(R1 - 1, 1)`, it's `A(R1 - 1, R8)`.
+Recognise anything? Well, neither did I the first time, and I'd [already seen the video](https://www.youtube.com/watch?v=i7sm9dzFtEI). It's the [Ackermann function](https://en.wikipedia.org/wiki/Ackermann_function)! With the slight twist that instead of the second line being `A(R0 - 1, 1)`, it's `A(R0 - 1, R7)`.
 
-No mathematical wizardry here, just implementing this and run a brute-force on all possible values of `R8`. And as much as it pains me to admit this, this is a tool for the raw processing efficiency of C, which I am not very proficient in, so I based my solution on [this wonderful code](https://github.com/glguy/synacor-vm/blob/master/teleport.c) by [glguy](https://github.com/glguy). My only contribution is the parallelisation of the computation. (500% speed-up! Whoo!)
+No mathematical wizardry here, just implementing this and run a brute-force on all possible values of `R7`. And as much as it pains me to admit this, this is a tool for the raw processing efficiency of C, which I am not very proficient in, so I based my solution on [this wonderful code](https://github.com/glguy/synacor-vm/blob/master/teleport.c) by [glguy](https://github.com/glguy). My only contribution is the parallelisation of the computation. (500% speed-up! Whoo!)
 
     gcc ackermann.c -o ackermann -lpthread -O3 && ./ackermann
 
-Running the algorithm, the correct value is revealed to be `0x6486`. Now we simply set `R8` to `0x6486` and patch the code to skip the check, before `use`ing the `teleporter`:
+Running the algorithm, the correct value is revealed to be `0x6486`. Now we simply set `R7` to `0x6486` and patch the code to skip the check, before `use`ing the `teleporter`:
 
     1571 call 178b       -> nop nop
-    1573 eq   R2 R1 0006 -> nop nop nop nop
-    1577 jf   R2 15cb    -> nop nop nop
+    1573 eq   R1 R0 0006 -> nop nop nop nop
+    1577 jf   R1 15cb    -> nop nop nop
 
 I've implemented this as a debug function to prepare the teleporter:
 
-    > .dbg_teleporter
+    > .dbg/teleporter
     Patched. Ready to run "use teleporter".
     > use teleporter
     
@@ -286,4 +284,4 @@ Given that you've made it this far (You didn't cheat, did you? I did warn you at
 
 Now that we've solved the puzzle, the only thing left is to write a [tool-assisted speed-run](https://github.com/RunasSudo/synacor.py/blob/master/dbg_speedrun.py) to completely break any given instance of the challenge in 5 seconds.
 
-    time python -u synacor.py dbg_speedrun | head -n 849
+    time python -u synacor.py challenge.bin dbg/speedrun | head -n 849

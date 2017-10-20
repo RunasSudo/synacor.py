@@ -14,4 +14,12 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-DBG_FLAG = True
+# Emulate 06bb
+for R1 in range(0x17b4, 0x7562):
+	R0 = cpu.SYN_MEM[R1]
+	R0 ^= pow(R1, 2, 32768)
+	R0 ^= 0x4154
+	cpu.SYN_MEM[R1] = R0
+
+# Jump past self-test
+cpu.SYN_PTR = 0x0377

@@ -1,5 +1,5 @@
 #    synacor.py - An implementation of the Synacor Challenge
-#    Copyright © 2017  RunasSudo
+#    Copyright © 2016–2017  RunasSudo
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Affero General Public License as published by
@@ -16,24 +16,15 @@
 
 import pickle
 
-# Read code into memory
-SYN_MEM = [0] * 32768
-
-with open('challenge.bin', 'rb') as data:
-	i = 0
-	while True:
-		byteData = data.read(2)
-		if len(byteData) < 2:
-			break
-		SYN_MEM[i] = struct.unpack('<H', byteData)[0]
-		i += 1
-
-# Emulate 06bb
-for R2 in range(0x17b4, 0x7562):
-	R1 = SYN_MEM[R2]
-	R1 ^= pow(R2, 2, 32768)
-	R1 ^= 0x4154
-	SYN_MEM[R2] = R1
-
-# Jump past self-test
-SYN_PTR = 0x0377
+if len(dbg_args) < 2:
+	print('Usage: .{} <file>'.format(dbg_args[0]))
+else:
+	model = {
+		'SYN_PTR': cpu.SYN_PTR,
+		'SYN_MEM': cpu.SYN_MEM,
+		'SYN_REG': cpu.SYN_REG,
+		'SYN_STK': cpu.SYN_STK
+	}
+	
+	with open(dbg_args[1], 'wb') as f:
+		pickle.dump(model, f)

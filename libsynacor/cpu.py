@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 #    synacor.py - An implementation of the Synacor Challenge
 #    Copyright © 2017  RunasSudo
 #
@@ -17,16 +16,18 @@
 
 from libsynacor import *
 
-import sys
-
-cpu = CPU()
-with open(sys.argv[1], 'rb') as data:
-	cpu.SYN_MEM = memory_from_file(data)
-
-if len(sys.argv) > 2:
-	dbg_args = sys.argv[2:]
-	with open(dbg_args[0] + '.py', 'r') as f:
-		exec(f.read(), globals(), locals())
-
-while True:
-	cpu.step()
+class CPU:
+	def __init__(self):
+		self.SYN_PTR = 0
+		self.SYN_MEM = [0] * 32768
+		self.SYN_REG = [0] * 8
+		self.SYN_STK = []
+		self.SYN_STDIN_BUF = []
+	
+	def swallow_op(self):
+		op = Operand.read_op(self.SYN_MEM[self.SYN_PTR])
+		self.SYN_PTR += 1
+	
+	def step(self):
+		instruction, self.SYN_PTR = Instruction.next_instruction(self.SYN_MEM, self.SYN_PTR)
+		instruction.run(self)

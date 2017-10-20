@@ -1,5 +1,5 @@
 #    synacor.py - An implementation of the Synacor Challenge
-#    Copyright © 2016  RunasSudo
+#    Copyright © 2017  RunasSudo
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Affero General Public License as published by
@@ -14,10 +14,14 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-# Set R8 to 6486
-SYN_REG[7] = 0x6486
-
-# Patch instructions 1571 to 1579 inclusive with nop's
-SYN_MEM[0x1571:0x157a] = [21] * 9
-
-print('Patched. Ready to run "use teleporter".')
+def memory_from_file(data):
+	import struct
+	SYN_MEM = [0] * 32768
+	SYN_PTR = 0
+	while True:
+		byteData = data.read(2)
+		if len(byteData) < 2:
+			break
+		SYN_MEM[SYN_PTR] = struct.unpack('<H', byteData)[0]
+		SYN_PTR += 1
+	return SYN_MEM

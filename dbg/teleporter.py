@@ -1,5 +1,5 @@
 #    synacor.py - An implementation of the Synacor Challenge
-#    Copyright © 2016  RunasSudo
+#    Copyright © 2016–2017  RunasSudo
 #
 #    This program is free software: you can redistribute it and/or modify
 #    it under the terms of the GNU Affero General Public License as published by
@@ -14,17 +14,10 @@
 #    You should have received a copy of the GNU Affero General Public License
 #    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import pickle
+# Set R7 to 6486
+cpu.SYN_REG[7] = 0x6486
 
-if len(dbg_args) < 2:
-	print('Usage: .{} <file>'.format(dbg_args[0]))
-else:
-	model = {
-		'SYN_PTR': SYN_PTR,
-		'SYN_MEM': SYN_MEM,
-		'SYN_REG': SYN_REG,
-		'SYN_STK': SYN_STK
-	}
-	
-	with open(dbg_args[1], 'wb') as f:
-		pickle.dump(model, f)
+# Patch instructions 1571 to 1579 inclusive with nop's
+cpu.SYN_MEM[0x1571:0x157a] = [21] * 9
+
+print('Patched. Ready to run "use teleporter".')
